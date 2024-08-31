@@ -6,8 +6,8 @@
 
 #include <zephyr/shell/shell.h>
 #include <zephyr/device.h>
-#include <zephyr/drivers/stepper.h>
 #include <stdlib.h>
+#include "stepper_shell_helper.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(stepper_shell, CONFIG_STEPPER_LOG_LEVEL);
@@ -30,6 +30,98 @@ static struct k_thread poll_thread;
 static int start_polling(const struct shell *sh);
 
 #endif /* CONFIG_STEPPER_SHELL_ASYNC */
+
+static const struct stepper_direction_map stepper_direction_map[] = {
+	STEPPER_DIRECTION_MAP_ENTRY("positive", STEPPER_DIRECTION_POSITIVE),
+	STEPPER_DIRECTION_MAP_ENTRY("negative", STEPPER_DIRECTION_NEGATIVE),
+};
+
+static const struct stepper_microstep_map stepper_microstep_map[] = {
+	STEPPER_MICROSTEP_MAP("1", STEPPER_FULL_STEP),
+	STEPPER_MICROSTEP_MAP("2", STEPPER_MICRO_STEP_2),
+	STEPPER_MICROSTEP_MAP("4", STEPPER_MICRO_STEP_4),
+	STEPPER_MICROSTEP_MAP("8", STEPPER_MICRO_STEP_8),
+	STEPPER_MICROSTEP_MAP("16", STEPPER_MICRO_STEP_16),
+	STEPPER_MICROSTEP_MAP("32", STEPPER_MICRO_STEP_32),
+	STEPPER_MICROSTEP_MAP("64", STEPPER_MICRO_STEP_64),
+	STEPPER_MICROSTEP_MAP("128", STEPPER_MICRO_STEP_128),
+	STEPPER_MICROSTEP_MAP("256", STEPPER_MICRO_STEP_256),
+};
+
+static void cmd_stepper_direction(size_t idx, struct shell_static_entry *entry)
+{
+	if (idx < ARRAY_SIZE(stepper_direction_map)) {
+		entry->syntax = stepper_direction_map[idx].name;
+	} else {
+		entry->syntax = NULL;
+	}
+	entry->syntax = stepper_direction_map[idx].name;
+	entry->handler = NULL;
+	entry->help = "Stepper direction";
+	entry->subcmd = NULL;
+}
+
+SHELL_DYNAMIC_CMD_CREATE(dsub_stepper_direction, cmd_stepper_direction);
+
+static void cmd_stepper_microstep(size_t idx, struct shell_static_entry *entry)
+{
+	if (idx < ARRAY_SIZE(stepper_microstep_map)) {
+		entry->syntax = stepper_microstep_map[idx].name;
+	} else {
+		entry->syntax = NULL;
+	}
+	entry->syntax = stepper_microstep_map[idx].name;
+	entry->handler = NULL;
+	entry->help = "Stepper microstep resolution";
+	entry->subcmd = NULL;
+}
+
+SHELL_DYNAMIC_CMD_CREATE(dsub_stepper_microstep, cmd_stepper_microstep);
+
+static void cmd_pos_stepper_motor_name(size_t idx, struct shell_static_entry *entry)
+{
+	const struct device *dev = shell_device_lookup(idx, NULL);
+
+	entry->syntax = (dev != NULL) ? dev->name : NULL;
+	entry->handler = NULL;
+	entry->help = "List Devices";
+	entry->subcmd = NULL;
+}
+
+SHELL_DYNAMIC_CMD_CREATE(dsub_pos_stepper_motor_name, cmd_pos_stepper_motor_name);
+
+static void cmd_pos_stepper_motor_name_dir(size_t idx, struct shell_static_entry *entry)
+{
+	const struct device *dev = shell_device_lookup(idx, NULL);
+
+	if (dev != NULL) {
+		entry->syntax = dev->name;
+	} else {
+		entry->syntax = NULL;
+	}
+	entry->handler = NULL;
+	entry->help = "List Devices";
+	entry->subcmd = &dsub_stepper_direction;
+}
+
+SHELL_DYNAMIC_CMD_CREATE(dsub_pos_stepper_motor_name_dir, cmd_pos_stepper_motor_name_dir);
+
+static void cmd_pos_stepper_motor_name_microstep(size_t idx, struct shell_static_entry *entry)
+{
+	const struct device *dev = shell_device_lookup(idx, NULL);
+
+	if (dev != NULL) {
+		entry->syntax = dev->name;
+	} else {
+		entry->syntax = NULL;
+	}
+	entry->handler = NULL;
+	entry->help = "List Devices";
+	entry->subcmd = &dsub_stepper_microstep;
+}
+
+SHELL_DYNAMIC_CMD_CREATE(dsub_pos_stepper_motor_name_microstep,
+			 cmd_pos_stepper_motor_name_microstep);
 
 static int parse_device_arg(const struct shell *sh, char **argv, const struct device **dev)
 {
@@ -116,10 +208,18 @@ static int cmd_stepper_set_max_velocity(const struct shell *sh, size_t argc, cha
 static int cmd_stepper_set_micro_step_res(const struct shell *sh, size_t argc, char **argv)
 {
 	const struct device *dev;
-	int err;
-	enum micro_step_resolution resolution = atoi(argv[arg_idx_param]);
+	enum micro_step_resolution resolution = {-EINVAL};
 
-	err = parse_device_arg(sh, argv, &dev);
+	for (int i = 0; i < ARRAY_SIZE(stepper_microstep_map); i++) {
+		if (strcmp(argv[arg_idx_param], stepper_microstep_map[i].name) == 0) {
+			resolution = stepper_microstep_map[i].microstep;
+		}
+	}
+	if (resolution == -EINVAL) {
+		return -EINVAL;
+	}
+
+	int err = parse_device_arg(sh, argv, &dev);
 	if (err < 0) {
 		return err;
 	}
@@ -127,6 +227,27 @@ static int cmd_stepper_set_micro_step_res(const struct shell *sh, size_t argc, c
 	err = stepper_set_micro_step_res(dev, resolution);
 	if (err) {
 		shell_error(sh, "Error: %d", err);
+	}
+
+	return err;
+}
+
+static int cmd_stepper_get_micro_step_res(const struct shell *sh, size_t argc, char **argv)
+{
+	const struct device *dev;
+	int err;
+	enum micro_step_resolution micro_step_res = 0;
+
+	err = parse_device_arg(sh, argv, &dev);
+	if (err < 0) {
+		return err;
+	}
+
+	err = stepper_get_micro_step_res(dev, &micro_step_res);
+	if (err < 0) {
+		shell_warn(sh, "Failed to get micro-step resolution: %d", err);
+	} else {
+		shell_print(sh, "Micro-step Resolution: %d", micro_step_res);
 	}
 
 	return err;
@@ -151,15 +272,36 @@ static int cmd_stepper_set_actual_position(const struct shell *sh, size_t argc, 
 	return err;
 }
 
-static int cmd_stepper_set_target_position(const struct shell *sh, size_t argc, char **argv)
+static int cmd_stepper_get_actual_position(const struct shell *sh, size_t argc, char **argv)
 {
 	const struct device *dev;
 	int err;
-	int32_t position = strtol(argv[arg_idx_param], NULL, 0);
+
+	err = parse_device_arg(sh, argv, &dev);
+	if (err < 0) {
+		return err;
+	}
+
+	int32_t actual_position = 0;
+
+	err = stepper_get_actual_position(dev, &actual_position);
+	if (err < 0) {
+		shell_warn(sh, "Failed to get actual position: %d", err);
+	} else {
+		shell_print(sh, "Actual Position: %d", actual_position);
+	}
+
+	return err;
+}
+
+static int cmd_stepper_set_target_position(const struct shell *sh, size_t argc, char **argv)
+{
+	const struct device *dev;
+	const int32_t position = strtol(argv[arg_idx_param], NULL, 0);
 	struct k_poll_signal *poll_signal =
 		COND_CODE_1(CONFIG_STEPPER_SHELL_ASYNC, (&stepper_signal), (NULL));
 
-	err = parse_device_arg(sh, argv, &dev);
+	int err = parse_device_arg(sh, argv, &dev);
 	if (err < 0) {
 		return err;
 	}
@@ -180,11 +322,19 @@ static int cmd_stepper_enable_constant_velocity_mode(const struct shell *sh, siz
 						     char **argv)
 {
 	const struct device *dev;
-	int err;
-	enum stepper_direction direction = atoi(argv[arg_idx_param]);
+	enum stepper_direction direction = {-EINVAL};
+
+	for (int i = 0; i < ARRAY_SIZE(stepper_direction_map); i++) {
+		if (strcmp(argv[arg_idx_param], stepper_direction_map[i].name) == 0) {
+			direction = stepper_direction_map[i].direction;
+		}
+	}
+	if (direction == -EINVAL) {
+		return -EINVAL;
+	}
 	uint32_t velocity = strtoul(argv[arg_idx_value], NULL, 0);
 
-	err = parse_device_arg(sh, argv, &dev);
+	int err = parse_device_arg(sh, argv, &dev);
 	if (err < 0) {
 		return err;
 	}
@@ -237,16 +387,6 @@ static int cmd_stepper_info(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-static void cmd_pos_stepper_motor_name(size_t idx, struct shell_static_entry *entry)
-{
-	const struct device *dev = shell_device_lookup(idx, NULL);
-
-	entry->syntax = (dev != NULL) ? dev->name : NULL;
-	entry->handler = NULL;
-	entry->help = "List Devices";
-	entry->subcmd = NULL;
-}
-
 #ifdef CONFIG_STEPPER_SHELL_ASYNC
 
 void stepper_poll_thread(void *p1, void *p2, void *p3)
@@ -289,8 +429,6 @@ static int start_polling(const struct shell *sh)
 
 #endif /* CONFIG_STEPPER_SHELL_ASYNC */
 
-SHELL_DYNAMIC_CMD_CREATE(dsub_pos_stepper_motor_name, cmd_pos_stepper_motor_name);
-
 SHELL_STATIC_SUBCMD_SET_CREATE(
 	stepper_cmds,
 	SHELL_CMD_ARG(enable, &dsub_pos_stepper_motor_name, "<device> <on/off>", cmd_stepper_enable,
@@ -299,13 +437,17 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 		      cmd_stepper_move, 3, 0),
 	SHELL_CMD_ARG(set_max_velocity, &dsub_pos_stepper_motor_name, "<device> <velocity>",
 		      cmd_stepper_set_max_velocity, 3, 0),
-	SHELL_CMD_ARG(set_micro_step_res, &dsub_pos_stepper_motor_name, "<device> <resolution>",
-		      cmd_stepper_set_micro_step_res, 3, 0),
+	SHELL_CMD_ARG(set_micro_step_res, &dsub_pos_stepper_motor_name_microstep,
+		      "<device> <resolution>", cmd_stepper_set_micro_step_res, 3, 0),
+	SHELL_CMD_ARG(get_micro_step_res, &dsub_pos_stepper_motor_name, "<device>",
+		      cmd_stepper_get_micro_step_res, 2, 0),
 	SHELL_CMD_ARG(set_actual_position, &dsub_pos_stepper_motor_name, "<device> <position>",
 		      cmd_stepper_set_actual_position, 3, 0),
+	SHELL_CMD_ARG(get_actual_position, &dsub_pos_stepper_motor_name, "<device>",
+		      cmd_stepper_get_actual_position, 2, 0),
 	SHELL_CMD_ARG(set_target_position, &dsub_pos_stepper_motor_name, "<device> <micro_steps>",
 		      cmd_stepper_set_target_position, 3, 0),
-	SHELL_CMD_ARG(enable_constant_velocity_mode, &dsub_pos_stepper_motor_name,
+	SHELL_CMD_ARG(enable_constant_velocity_mode, &dsub_pos_stepper_motor_name_dir,
 		      "<device> <direction> <velocity>", cmd_stepper_enable_constant_velocity_mode,
 		      4, 0),
 	SHELL_CMD_ARG(info, &dsub_pos_stepper_motor_name, "<device>", cmd_stepper_info, 2, 0),
