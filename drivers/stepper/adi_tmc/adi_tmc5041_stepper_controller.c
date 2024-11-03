@@ -63,7 +63,7 @@ static int tmc5041_write(const struct device *dev, const uint8_t reg_addr, const
 
 	k_sem_take(&data->sem, K_FOREVER);
 
-	err = tmc_spi_write_register(&bus, TMC5041_WRITE_BIT, reg_addr, reg_val);
+	err = tmc_spi_write_register(&bus, TMC5XXX_WRITE_BIT, reg_addr, reg_val);
 
 	k_sem_give(&data->sem);
 
@@ -83,7 +83,7 @@ static int tmc5041_read(const struct device *dev, const uint8_t reg_addr, uint32
 
 	k_sem_take(&data->sem, K_FOREVER);
 
-	err = tmc_spi_read_register(&bus, TMC5041_ADDRESS_MASK, reg_addr, reg_val);
+	err = tmc_spi_read_register(&bus, TMC5XXX_ADDRESS_MASK, reg_addr, reg_val);
 
 	k_sem_give(&data->sem);
 
@@ -197,7 +197,7 @@ static void rampstat_work_handler(struct k_work *work)
 		LOG_INF("%s: Stall detected", stepper_data->stepper->name);
 		err = tmc5041_write(stepper_config->controller,
 				    TMC5041_RAMPMODE(stepper_config->index),
-				    TMC5041_RAMPMODE_HOLD_MODE);
+				    TMC5XXX_RAMPMODE_HOLD_MODE);
 		if (err != 0) {
 			LOG_ERR("%s: Failed to stop motor", stepper_data->stepper->name);
 			return;
@@ -266,9 +266,9 @@ static int tmc5041_stepper_enable(const struct device *dev, const bool enable)
 	}
 
 	if (enable) {
-		reg_value |= TMC5041_CHOPCONF_DRV_ENABLE_MASK;
+		reg_value |= TMC5XXX_CHOPCONF_DRV_ENABLE_MASK;
 	} else {
-		reg_value &= ~TMC5041_CHOPCONF_DRV_ENABLE_MASK;
+		reg_value &= ~TMC5XXX_CHOPCONF_DRV_ENABLE_MASK;
 	}
 
 	err = tmc5041_write(config->controller, TMC5041_CHOPCONF(config->index), reg_value);
@@ -318,7 +318,7 @@ static int tmc5041_stepper_move(const struct device *dev, const int32_t steps)
 	int32_t target_position = position + steps;
 
 	err = tmc5041_write(config->controller, TMC5041_RAMPMODE(config->index),
-			    TMC5041_RAMPMODE_POSITIONING_MODE);
+			    TMC5XXX_RAMPMODE_POSITIONING_MODE);
 	if (err != 0) {
 		return -EIO;
 	}
@@ -373,9 +373,9 @@ static int tmc5041_stepper_set_micro_step_res(const struct device *dev,
 		return -EIO;
 	}
 
-	reg_value &= ~TMC5041_CHOPCONF_MRES_MASK;
+	reg_value &= ~TMC5XXX_CHOPCONF_MRES_MASK;
 	reg_value |= ((MICRO_STEP_RES_INDEX(STEPPER_MICRO_STEP_256) - LOG2(res))
-		      << TMC5041_CHOPCONF_MRES_SHIFT);
+		      << TMC5XXX_CHOPCONF_MRES_SHIFT);
 
 	err = tmc5041_write(config->controller, TMC5041_CHOPCONF(config->index), reg_value);
 	if (err != 0) {
@@ -398,8 +398,8 @@ static int tmc5041_stepper_get_micro_step_res(const struct device *dev,
 	if (err != 0) {
 		return -EIO;
 	}
-	reg_value &= TMC5041_CHOPCONF_MRES_MASK;
-	reg_value >>= TMC5041_CHOPCONF_MRES_SHIFT;
+	reg_value &= TMC5XXX_CHOPCONF_MRES_MASK;
+	reg_value >>= TMC5XXX_CHOPCONF_MRES_SHIFT;
 	*res = (1 << (MICRO_STEP_RES_INDEX(STEPPER_MICRO_STEP_256) - reg_value));
 	LOG_DBG("Stepper motor controller %s get micro step resolution: %d", dev->name, *res);
 	return 0;
@@ -411,7 +411,7 @@ static int tmc5041_stepper_set_actual_position(const struct device *dev, const i
 	int err;
 
 	err = tmc5041_write(config->controller, TMC5041_RAMPMODE(config->index),
-			    TMC5041_RAMPMODE_HOLD_MODE);
+			    TMC5XXX_RAMPMODE_HOLD_MODE);
 	if (err != 0) {
 		return -EIO;
 	}
@@ -449,7 +449,7 @@ static int tmc5041_stepper_set_target_position(const struct device *dev, const i
 	}
 
 	err = tmc5041_write(config->controller, TMC5041_RAMPMODE(config->index),
-			    TMC5041_RAMPMODE_POSITIONING_MODE);
+			    TMC5XXX_RAMPMODE_POSITIONING_MODE);
 	if (err != 0) {
 		return -EIO;
 	}
@@ -493,7 +493,7 @@ static int tmc5041_stepper_enable_constant_velocity_mode(const struct device *de
 	switch (direction) {
 	case STEPPER_DIRECTION_POSITIVE:
 		err = tmc5041_write(config->controller, TMC5041_RAMPMODE(config->index),
-				    TMC5041_RAMPMODE_POSITIVE_VELOCITY_MODE);
+				    TMC5XXX_RAMPMODE_POSITIVE_VELOCITY_MODE);
 		if (err != 0) {
 			return -EIO;
 		}
@@ -505,7 +505,7 @@ static int tmc5041_stepper_enable_constant_velocity_mode(const struct device *de
 
 	case STEPPER_DIRECTION_NEGATIVE:
 		err = tmc5041_write(config->controller, TMC5041_RAMPMODE(config->index),
-				    TMC5041_RAMPMODE_NEGATIVE_VELOCITY_MODE);
+				    TMC5XXX_RAMPMODE_NEGATIVE_VELOCITY_MODE);
 		if (err != 0) {
 			return -EIO;
 		}
@@ -611,7 +611,7 @@ static int tmc5041_init(const struct device *dev)
 
 	/* Init non motor-index specific registers here. */
 	LOG_DBG("GCONF: %d", config->gconf);
-	err = tmc5041_write(dev, TMC5041_GCONF, config->gconf);
+	err = tmc5041_write(dev, TMC5XXX_GCONF, config->gconf);
 	if (err != 0) {
 		return -EIO;
 	}
@@ -619,7 +619,7 @@ static int tmc5041_init(const struct device *dev)
 	/* Read GSTAT register values to clear any errors SPI Datagram. */
 	uint32_t gstat_value;
 
-	err = tmc5041_read(dev, TMC5041_GSTAT, &gstat_value);
+	err = tmc5041_read(dev, TMC5XXX_GSTAT, &gstat_value);
 	if (err != 0) {
 		return -EIO;
 	}
@@ -657,7 +657,7 @@ static int tmc5041_stepper_init(const struct device *dev)
 
 		err = tmc5041_write(
 			stepper_config->controller, TMC5041_COOLCONF(stepper_config->index),
-			stall_guard_threshold << TMC5041_COOLCONF_SG2_THRESHOLD_VALUE_SHIFT);
+			stall_guard_threshold << TMC5XXX_COOLCONF_SG2_THRESHOLD_VALUE_SHIFT);
 		if (err != 0) {
 			return -EIO;
 		}
