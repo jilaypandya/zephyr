@@ -25,6 +25,16 @@ extern "C" {
  * @{
  */
 
+struct tmc5xxx_common_data {
+	struct k_sem sem;
+};
+
+struct tmc5xxx_common_config {
+	const uint32_t gconf;
+	struct spi_dt_spec spi;
+	const uint32_t clock_frequency;
+};
+
 /**
  * @brief Calculate the velocity in full clock cycles from the velocity in Hz
  *

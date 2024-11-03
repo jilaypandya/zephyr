@@ -18,16 +18,6 @@
 
 LOG_MODULE_REGISTER(tmc5041, CONFIG_STEPPER_LOG_LEVEL);
 
-struct tmc5041_data {
-	struct k_sem sem;
-};
-
-struct tmc5041_config {
-	const uint32_t gconf;
-	struct spi_dt_spec spi;
-	const uint32_t clock_frequency;
-};
-
 struct tmc5041_stepper_data {
 	struct k_work_delayable stallguard_dwork;
 	/* Work item to run the callback in a thread context. */
@@ -56,8 +46,8 @@ struct tmc5041_stepper_config {
 
 static int tmc5041_write(const struct device *dev, const uint8_t reg_addr, const uint32_t reg_val)
 {
-	const struct tmc5041_config *config = dev->config;
-	struct tmc5041_data *data = dev->data;
+	const struct tmc5xxx_common_config *config = dev->config;
+	struct tmc5xxx_common_data *data = dev->data;
 	const struct spi_dt_spec bus = config->spi;
 	int err;
 
@@ -76,8 +66,8 @@ static int tmc5041_write(const struct device *dev, const uint8_t reg_addr, const
 
 static int tmc5041_read(const struct device *dev, const uint8_t reg_addr, uint32_t *reg_val)
 {
-	const struct tmc5041_config *config = dev->config;
-	struct tmc5041_data *data = dev->data;
+	const struct tmc5xxx_common_config *config = dev->config;
+	struct tmc5xxx_common_data *data = dev->data;
 	const struct spi_dt_spec bus = config->spi;
 	int err;
 
@@ -346,7 +336,7 @@ static int tmc5041_stepper_move(const struct device *dev, const int32_t steps)
 static int tmc5041_stepper_set_max_velocity(const struct device *dev, uint32_t velocity)
 {
 	const struct tmc5041_stepper_config *config = dev->config;
-	const struct tmc5041_config *tmc5041_config = config->controller->config;
+	const struct tmc5xxx_common_config *tmc5041_config = config->controller->config;
 	uint32_t velocity_fclk;
 	int err;
 
@@ -475,7 +465,7 @@ static int tmc5041_stepper_enable_constant_velocity_mode(const struct device *de
 {
 	LOG_DBG("Stepper motor controller %s enable constant velocity mode", dev->name);
 	const struct tmc5041_stepper_config *config = dev->config;
-	const struct tmc5041_config *tmc5041_config = config->controller->config;
+	const struct tmc5xxx_common_config *tmc5041_config = config->controller->config;
 	struct tmc5041_stepper_data *data = dev->data;
 	uint32_t velocity_fclk;
 	int err;
@@ -598,8 +588,8 @@ int tmc5041_stepper_set_ramp(const struct device *dev,
 static int tmc5041_init(const struct device *dev)
 {
 	LOG_DBG("TMC5041 stepper motor controller %s initialized", dev->name);
-	struct tmc5041_data *data = dev->data;
-	const struct tmc5041_config *config = dev->config;
+	struct tmc5xxx_common_data *data = dev->data;
+	const struct tmc5xxx_common_config *config = dev->config;
 	int err;
 
 	k_sem_init(&data->sem, 1, 1);
@@ -735,8 +725,8 @@ static int tmc5041_stepper_init(const struct device *dev)
 	BUILD_ASSERT(DT_INST_CHILD_NUM(inst) <= 2, "tmc5041 can drive two steppers at max");	\
 	BUILD_ASSERT((DT_INST_PROP(inst, clock_frequency) > 0),					\
 		     "clock frequency must be non-zero positive value");			\
-	static struct tmc5041_data tmc5041_data_##inst;						\
-	static const struct tmc5041_config tmc5041_config_##inst = {				\
+	static struct tmc5xxx_common_data tmc5041_data_##inst;					\
+	static const struct tmc5xxx_common_config tmc5041_config_##inst = {			\
 		.gconf = (									\
 		(DT_INST_PROP(inst, poscmp_enable) << TMC5041_GCONF_POSCMP_ENABLE_SHIFT) |	\
 		(DT_INST_PROP(inst, test_mode) << TMC5041_GCONF_TEST_MODE_SHIFT) |		\
