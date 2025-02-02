@@ -13,9 +13,11 @@ test_spi_tmc50xx: tmc50xx@0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
 	clock-frequency = <1>;
+	dc-sync;
 
 	tmc50xx_0: tmc50xx_0@0 {
 		status = "okay";
+		invert-direction;
 		reg = <0>;
 	};
 

@@ -98,6 +98,7 @@ extern "C" {
 #define TMC50XX_GCONF_TEST_MODE_SHIFT     7
 #define TMC50XX_GCONF_SHAFT_SHIFT(n)      ((n) ? 8 : 9)
 #define TMC50XX_LOCK_GCONF_SHIFT          10
+#define TMC5072_DC_SYNC_SHIFT             11
 
 #define TMC50XX_PWMCONF(motor)    (0x10 | TMC50XX_MOTOR_ADDR_PWM(motor))
 #define TMC50XX_PWM_STATUS(motor) (0x11 | TMC50XX_MOTOR_ADDR_PWM(motor))

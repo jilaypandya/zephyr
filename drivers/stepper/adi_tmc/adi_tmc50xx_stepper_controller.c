@@ -734,6 +734,7 @@ static int tmc50xx_stepper_init(const struct device *dev)
 		(DT_INST_PROP(inst, test_mode) << TMC50XX_GCONF_TEST_MODE_SHIFT) |		\
 		DT_INST_FOREACH_CHILD(inst, TMC50XX_SHAFT_CONFIG)				\
 		(DT_INST_PROP(inst, lock_gconf) << TMC50XX_LOCK_GCONF_SHIFT)),			\
+		(DT_INST_PROP(inst, dc_sync) << TMC5072_DC_SYNC_SHIFT),				\
 		.spi = SPI_DT_SPEC_INST_GET(inst, (SPI_OP_MODE_MASTER | SPI_TRANSFER_MSB |	\
 					SPI_MODE_CPOL | SPI_MODE_CPHA |	SPI_WORD_SET(8)), 0),	\
 		.clock_frequency = DT_INST_PROP(inst, clock_frequency),};			\

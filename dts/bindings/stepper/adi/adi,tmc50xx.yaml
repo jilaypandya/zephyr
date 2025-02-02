@@ -61,8 +61,6 @@ include:
   - name: adi,trinamic-gconf.yaml
     property-allowlist:
       - poscmp-enable
-      - shaft1
-      - shaft2
       - test-mode
       - lock-gconf
 
@@ -84,6 +82,12 @@ properties:
 
       Hint: µstep velocity v[Hz] µsteps / s v[Hz] = v[50xx] * ( fCLK[Hz]/2 / 2^23 )
             where v[50xx] is the value written to the TMC50XX.
+
+  dc-sync:
+    type: boolean
+    description: |
+      1: Synchronizes both motors, when both are operated in DcStep mode.
+      The slower motor will slow down the other motor, too.
 
 child-binding:
   include:
