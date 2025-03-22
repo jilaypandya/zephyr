@@ -1,0 +1,15 @@
+/ {
+	aliases {
+		bldc = &st_l6235;
+	};
+};
+
+/ {
+	st_l6235: st_l6235 {
+		compatible = "st,l6235";
+		status = "okay";
+		en-gpios = <&hsgpio0 19 GPIO_ACTIVE_HIGH>;
+		dir-gpios = <&hsgpio0 1 GPIO_ACTIVE_HIGH>;
+		brk-gpios = <&hsgpio0 10 GPIO_ACTIVE_HIGH>;
+	};
+};

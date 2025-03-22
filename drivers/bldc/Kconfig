@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig BLDC
+    bool "BLDC Controller"
+    help
+      Enable BLDC controller
+
+if BLDC
+
+module = BLDC
+module-str = bldc
+source "subsys/logging/Kconfig.template.log_config"
+
+config BLDC_INIT_PRIORITY
+    int "BLDC Motor Controller init priority"
+    default 90
+    help
+      BLDC motor controller initialization priority.
+
+comment "BLDC Drivers"
+
+# zephyr-keep-sorted-start
+rsource "Kconfig.st_l6235"
+#zephyr-keep-sorted-stop
+
+endif

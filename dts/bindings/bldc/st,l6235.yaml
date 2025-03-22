@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+description: ST L6235 BLDC Controller
+
+compatible: "st,l6235"
+
+properties:
+  dir-gpios:
+    type: phandle-array
+    description: Direction pin.
+
+  en-gpios:
+    type: phandle-array
+    description: Enable pin.
+
+  brk-gpios:
+    type: phandle-array
+    description: Brake pin.

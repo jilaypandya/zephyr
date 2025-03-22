@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+config ST_L6235
+    bool "ST L6235 BLDC Motor Controller"
+    depends on DT_HAS_ST_L6235_ENABLED
+    default y
