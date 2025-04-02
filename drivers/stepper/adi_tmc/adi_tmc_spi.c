@@ -10,20 +10,24 @@
 #define BUFFER_SIZE 5U
 
 #include <zephyr/logging/log.h>
-
 LOG_MODULE_REGISTER(tmc_spi, CONFIG_SPI_LOG_LEVEL);
 
 static void parse_tmc_spi_status(const uint8_t status_byte)
 {
-	if ((status_byte & BIT_MASK(0)) != 0) {
-		LOG_WRN("spi dataframe: reset_flag detected");
-	}
-	if ((status_byte & BIT_MASK(1)) != 0) {
-		LOG_WRN("spi dataframe: driver_error(1) detected");
-	}
-	if ((status_byte & BIT_MASK(2)) != 0) {
-		LOG_WRN("spi dataframe: driver_error(2) detected");
-	}
+#ifdef CONFIG_STEPPER_ADI_TMC50XX_SPI_LOG_STATUS_BYTE
+	uint8_t status_flags[8];
+	status_flags[0] = status_byte & BIT(0);
+	status_flags[1] = status_byte & BIT(1);
+	status_flags[2] = status_byte & BIT(2);
+	status_flags[3] = status_byte & BIT(3);
+	status_flags[4] = status_byte & BIT(4);
+	status_flags[5] = status_byte & BIT(5);
+	status_flags[6] = status_byte & BIT(6);
+	status_flags[7] = status_byte & BIT(7);
+
+	LOG_HEXDUMP_DBG(status_flags, 8, "reset: | drv_err_1: | drv_err_2: | velocity_reached_1: | velocity_reached_2: | status_stop_l1: | status_stop_l2: |");
+#endif
+/** Add further status byte parsing here */
 }
 
 static void print_tx_rx_buffer(const uint8_t *const tx_buffer, const uint8_t *const rx_buffer)

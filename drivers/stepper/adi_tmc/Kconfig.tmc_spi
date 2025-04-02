@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig STEPPER_ADI_TMC_SPI
+	bool "Use Trinamic Stepper Controller with SPI"
+	depends on STEPPER_ADI_TMC
+	select SPI
+	help
+	  A Trinamic Stepper Controller with SPI is enabled
+
+if STEPPER_ADI_TMC_SPI
+
+config STEPPER_ADI_$(module)_SPI_LOG_STATUS_BYTE
+    bool "$(module-str) log status byte"
+    default n
+
+endif # STEPPER_ADI_TMC_SPI

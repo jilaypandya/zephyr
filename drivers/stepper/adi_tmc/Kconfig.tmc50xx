@@ -11,3 +11,4 @@ config STEPPER_ADI_TMC50XX
 module = TMC50XX
 module-str = tmc50xx
 rsource "Kconfig.tmc_rampgen_template"
+rsource "Kconfig.tmc_spi"
