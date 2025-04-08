@@ -255,7 +255,7 @@ static int drv84xx_disable(const struct device *dev)
 		}
 	}
 
-	config->common.timing_source->stop(dev);
+	config->common.timing_source_api->stop(dev);
 
 	data->enabled = false;
 
@@ -453,7 +453,7 @@ static int drv84xx_init(const struct device *dev)
 		return ret;
 	}
 
-	/* Configure fault pin if it is available */
+	/* Configure a fault pin if it is available */
 	if (config->fault_pin.port != NULL) {
 		ret = gpio_pin_configure_dt(&config->fault_pin, GPIO_INPUT);
 		if (ret != 0) {

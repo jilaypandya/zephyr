@@ -14,7 +14,8 @@ LOG_MODULE_REGISTER(stepper, CONFIG_STEPPER_LOG_LEVEL);
 
 static const struct device *stepper = DEVICE_DT_GET(DT_ALIAS(stepper));
 
-enum stepper_mode {
+enum stepper_mode
+{
 	STEPPER_MODE_ENABLE,
 	STEPPER_MODE_PING_PONG_RELATIVE,
 	STEPPER_MODE_PING_PONG_ABSOLUTE,
@@ -32,11 +33,12 @@ static int32_t ping_pong_target_position =
 static K_SEM_DEFINE(stepper_generic_sem, 0, 1);
 
 static void stepper_callback(const struct device *dev, const enum stepper_event event,
-			     void *user_data)
+                             void *user_data)
 {
 	switch (event) {
 	case STEPPER_EVENT_STEPS_COMPLETED:
-		k_sem_give(&stepper_generic_sem);
+		ping_pong_target_position *= -1;
+		stepper_move_by(stepper, ping_pong_target_position);
 		break;
 	default:
 		break;
@@ -64,65 +66,81 @@ INPUT_CALLBACK_DEFINE(NULL, button_pressed, NULL);
 
 int main(void)
 {
-	LOG_INF("Starting generic stepper sample\n");
+	LOG_DBG("###############################");
+	LOG_INF("Starting generic stepper sample");
 	if (!device_is_ready(stepper)) {
-		LOG_ERR("Device %s is not ready\n", stepper->name);
+		LOG_ERR("Device %s is not ready", stepper->name);
 		return -ENODEV;
 	}
-	LOG_DBG("stepper is %p, name is %s\n", stepper, stepper->name);
+	LOG_DBG("stepper is %p, name is %s", stepper, stepper->name);
 
 	stepper_set_event_callback(stepper, stepper_callback, NULL);
 	stepper_set_reference_position(stepper, 0);
-	stepper_set_microstep_interval(stepper, CONFIG_STEP_INTERVAL_NS);
+
+	struct stepper_ramp_profile ramp_profile = {
+		.acceleration = 10000,
+		.min_interval = 500000,
+		.deceleration = 10000,
+	};
+	stepper_set_ramp_profile(stepper, &ramp_profile);
+
+	ping_pong_target_position = 600;
+	atomic_set(&stepper_mode, STEPPER_MODE_PING_PONG_RELATIVE);
+	k_sem_give(&stepper_generic_sem);
 
 	for (;;) {
 		k_sem_take(&stepper_generic_sem, K_FOREVER);
 		switch (atomic_get(&stepper_mode)) {
 		case STEPPER_MODE_ENABLE:
 			stepper_enable(stepper);
-			LOG_INF("mode: enable\n");
+			LOG_INF("mode: enable");
 			break;
 		case STEPPER_MODE_STOP:
 			stepper_stop(stepper);
-			LOG_INF("mode: stop\n");
+			LOG_INF("mode: stop");
 			break;
 		case STEPPER_MODE_ROTATE_CW:
 			stepper_run(stepper, STEPPER_DIRECTION_POSITIVE);
-			LOG_INF("mode: rotate cw\n");
+			LOG_INF("mode: rotate cw");
 			break;
 		case STEPPER_MODE_ROTATE_CCW:
 			stepper_run(stepper, STEPPER_DIRECTION_NEGATIVE);
-			LOG_INF("mode: rotate ccw\n");
+			LOG_INF("mode: rotate ccw");
 			break;
 		case STEPPER_MODE_PING_PONG_RELATIVE:
 			ping_pong_target_position *= -1;
 			stepper_move_by(stepper, ping_pong_target_position);
-			LOG_INF("mode: ping pong relative\n");
+			LOG_INF("mode: ping pong relative");
 			break;
 		case STEPPER_MODE_PING_PONG_ABSOLUTE:
 			ping_pong_target_position *= -1;
 			stepper_move_to(stepper, ping_pong_target_position);
-			LOG_INF("mode: ping pong absolute\n");
+			LOG_INF("mode: ping pong absolute");
 			break;
 		case STEPPER_MODE_DISABLE:
 			stepper_disable(stepper);
-			LOG_INF("mode: disable\n");
+			LOG_INF("mode: disable");
 			break;
 		}
 	}
 	return 0;
 }
 
-static void monitor_thread(void)
-{
-	for (;;) {
-		int32_t actual_position;
-
-		stepper_get_actual_position(stepper, &actual_position);
-		LOG_DBG("Actual position: %d\n", actual_position);
-		k_sleep(K_MSEC(CONFIG_MONITOR_THREAD_TIMEOUT_MS));
-	}
-}
-
-K_THREAD_DEFINE(monitor_tid, CONFIG_MONITOR_THREAD_STACK_SIZE, monitor_thread, NULL, NULL, NULL, 5,
-		0, 0);
+// static void monitor_thread(void)
+// {
+// 	for (;;) {
+// 		int32_t actual_position;
+//
+// 		stepper_get_actual_position(stepper, &actual_position);
+// 		LOG_DBG("Actual position: %d", actual_position);
+// 		k_sleep(K_MSEC(CONFIG_MONITOR_THREAD_TIMEOUT_MS));
+// 	}
+// }
+//
+// K_THREAD_DEFINE(monitor_tid,
+//                 CONFIG_MONITOR_THREAD_STACK_SIZE,
+//                 monitor_thread,
+//                 NULL, NULL, NULL,
+//                 5,
+//                 0,
+//                 0);

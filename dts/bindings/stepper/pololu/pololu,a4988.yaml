@@ -1,0 +1,99 @@
+# Copyright (c) 2025 Your Name
+# SPDX-License-Identifier: Apache-2.0
+
+# DTS binding for the Allegro A4988 Stepper Motor Driver
+
+description: |
+  Allegro A4988 Stepper Motor Driver. This binding describes the hardware
+  interface for controlling the A4988 chip, commonly found on carrier
+  boards like those from Pololu.
+
+  The driver requires STEP and DIR signals. ENABLE, microstepping (MSx),
+  SLEEP, and RESET signals are optional but recommended for full control.
+
+compatible: "allegro,a4988"
+
+include: base.yaml # Includes 'label' property
+
+properties:
+  step-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO specifier for the STEP pin. A rising edge on this pin typically
+      commands the motor to take one step (or microstep).
+
+  dir-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      GPIO specifier for the DIR (Direction) pin. The logic level on this
+      pin determines the direction of motor rotation.
+
+  enable-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO specifier for the ENABLE pin. This pin is typically active-low.
+      When pulled low, the driver outputs are enabled. When high (or floating,
+      depending on carrier pull-ups), the outputs are disabled (high impedance).
+      If not provided, the driver might assume it's always enabled or tied
+      to a default state by external hardware.
+
+  ms1-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO specifier for the MS1 (Microstep Select 1) pin. Used in conjunction
+      with MS2 and MS3 to set the microstepping resolution.
+
+  ms2-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO specifier for the MS2 (Microstep Select 2) pin. Used in conjunction
+      with MS1 and MS3 to set the microstepping resolution.
+
+  ms3-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO specifier for the MS3 (Microstep Select 3) pin. Used in conjunction
+      with MS1 and MS2 to set the microstepping resolution.
+      Refer to the A4988 datasheet for the truth table:
+        MS1 | MS2 | MS3 | Resolution
+        -----------------------------
+         L  |  L  |  L  | Full step
+         H  |  L  |  L  | Half step
+         L  |  H  |  L  | 1/4 step
+         H  |  H  |  L  | 1/8 step
+         H  |  H  |  H  | 1/16 step
+      If MS pins are not provided via GPIOs, the driver may assume a default
+      resolution (e.g., full step) or rely on external pull-up/pull-down
+      resistors on the carrier board setting a fixed resolution.
+
+  sleep-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO specifier for the SLEEP pin. This pin is typically active-low.
+      Pulling it low puts the driver into a low-power sleep mode. If not
+      provided, assumes the pin is tied high externally or not controlled
+      by the MCU.
+
+  reset-gpios:
+    type: phandle-array
+    required: false
+    description: |
+      GPIO specifier for the RESET pin. This pin is typically active-low.
+      Pulling it low resets the internal translator logic. If not provided,
+      assumes the pin is tied high externally or not controlled by the MCU.
+      Note: On many Pololu carriers, RESET might be tied to SLEEP.
+
+  steps-per-revolution:
+    type: int
+    required: false
+    description: |
+      The number of full steps the connected stepper motor takes for one
+      complete revolution (e.g., 200 for a 1.8-degree step angle motor).
+      This information can be used by higher-level motion control logic.
