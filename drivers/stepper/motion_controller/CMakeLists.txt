@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_subdirectory(timing_source)
-add_subdirectory(ramp)
+add_subdirectory_ifdef(CONFIG_STEPPER_RAMP ramp)
 
 zephyr_library_sources(stepper_motion_controller.c)
-
-# TODO: add fake controller
