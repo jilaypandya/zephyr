@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+config STEPPER_ADI_TMC_SPI
+	bool "Use Trinamic Stepper Controller with SPI"
+	depends on STEPPER_ADI_TMC
+	select SPI
+	help
+	  A Trinamic Stepper Controller with SPI is enabled
+
+config STEPPER_ADI_$(module)_PARSE_RX_DATA
+	bool "$(module-str) parse RX data"
+	depends on STEPPER_ADI_TMC_SPI
+	help
+	  When enabled, the RX data will be parsed.

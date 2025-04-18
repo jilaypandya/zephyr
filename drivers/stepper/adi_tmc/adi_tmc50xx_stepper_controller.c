@@ -56,6 +56,24 @@ struct tmc50xx_stepper_config {
 
 static int read_actual_position(const struct tmc50xx_stepper_config *config, int32_t *position);
 
+static void parse_tmc50xx_spi_status(const uint8_t *const rx_buffer)
+{
+#ifdef CONFIG_STEPPER_ADI_TMC50XX_PARSE_RX_DATA
+	const uint8_t status_byte = rx_buffer[0];
+	if ((status_byte & BIT_MASK(0)) != 0) {
+		LOG_WRN("spi dataframe: reset_flag detected");
+	}
+	if ((status_byte & BIT_MASK(1)) != 0) {
+		LOG_WRN("spi dataframe: driver_error(1) detected");
+	}
+	if ((status_byte & BIT_MASK(2)) != 0) {
+		LOG_WRN("spi dataframe: driver_error(2) detected");
+	}
+#else
+	ARG_UNUSED(rx_buffer);
+#endif
+}
+
 static int tmc50xx_write(const struct device *dev, const uint8_t reg_addr, const uint32_t reg_val)
 {
 	const struct tmc50xx_config *config = dev->config;
@@ -65,7 +83,8 @@ static int tmc50xx_write(const struct device *dev, const uint8_t reg_addr, const
 
 	k_sem_take(&data->sem, K_FOREVER);
 
-	err = tmc_spi_write_register(&bus, TMC5XXX_WRITE_BIT, reg_addr, reg_val);
+	err = tmc_spi_write_register(&bus, TMC5XXX_WRITE_BIT, reg_addr, reg_val,
+				     parse_tmc50xx_spi_status);
 
 	k_sem_give(&data->sem);
 
@@ -85,7 +104,8 @@ static int tmc50xx_read(const struct device *dev, const uint8_t reg_addr, uint32
 
 	k_sem_take(&data->sem, K_FOREVER);
 
-	err = tmc_spi_read_register(&bus, TMC5XXX_ADDRESS_MASK, reg_addr, reg_val);
+	err = tmc_spi_read_register(&bus, TMC5XXX_ADDRESS_MASK, reg_addr, reg_val,
+				    parse_tmc50xx_spi_status);
 
 	k_sem_give(&data->sem);
 
@@ -198,8 +218,8 @@ static void log_stallguard(struct tmc50xx_stepper_data *stepper_data, const uint
 	const uint8_t sg_result = FIELD_GET(TMC5XXX_DRV_STATUS_SG_RESULT_MASK, drv_status);
 	const bool sg_status = FIELD_GET(TMC5XXX_DRV_STATUS_SG_STATUS_MASK, drv_status);
 
-	LOG_DBG("%s position: %d | sg result: %d status: %d",
-		stepper_data->stepper->name, position, sg_result, sg_status);
+	LOG_DBG("%s position: %d | sg result: %d status: %d", stepper_data->stepper->name, position,
+		sg_result, sg_status);
 }
 
 #endif

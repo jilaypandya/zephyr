@@ -4,27 +4,12 @@
  */
 
 #include <zephyr/sys/util.h>
-
 #include "adi_tmc_spi.h"
 
 #define BUFFER_SIZE 5U
 
 #include <zephyr/logging/log.h>
-
 LOG_MODULE_REGISTER(tmc_spi, CONFIG_SPI_LOG_LEVEL);
-
-static void parse_tmc_spi_status(const uint8_t status_byte)
-{
-	if ((status_byte & BIT_MASK(0)) != 0) {
-		LOG_WRN("spi dataframe: reset_flag detected");
-	}
-	if ((status_byte & BIT_MASK(1)) != 0) {
-		LOG_WRN("spi dataframe: driver_error(1) detected");
-	}
-	if ((status_byte & BIT_MASK(2)) != 0) {
-		LOG_WRN("spi dataframe: driver_error(2) detected");
-	}
-}
 
 static void print_tx_rx_buffer(const uint8_t *const tx_buffer, const uint8_t *const rx_buffer)
 {
@@ -33,7 +18,8 @@ static void print_tx_rx_buffer(const uint8_t *const tx_buffer, const uint8_t *co
 }
 
 int tmc_spi_read_register(const struct spi_dt_spec *bus, const uint8_t read_address_mask,
-			  const uint8_t register_address, uint32_t *data)
+			  const uint8_t register_address, uint32_t *data,
+			  parse_rx_buffer_cb_t parse_rx_buffer_cb)
 {
 	uint8_t tx_buffer[BUFFER_SIZE] = {read_address_mask & register_address, 0U, 0U, 0U, 0U};
 	uint8_t rx_buffer[BUFFER_SIZE];
@@ -64,7 +50,9 @@ int tmc_spi_read_register(const struct spi_dt_spec *bus, const uint8_t read_addr
 	}
 
 	print_tx_rx_buffer(tx_buffer, rx_buffer);
-	parse_tmc_spi_status(rx_buffer[0]);
+	if (parse_rx_buffer_cb) {
+		parse_rx_buffer_cb(rx_buffer);
+	}
 
 	/** read the value from the address */
 	status = spi_transceive_dt(bus, &spi_buffer_array_tx, &spi_buffer_array_rx);
@@ -76,12 +64,15 @@ int tmc_spi_read_register(const struct spi_dt_spec *bus, const uint8_t read_addr
 		((uint32_t)rx_buffer[3] << 8) + (uint32_t)rx_buffer[4];
 
 	print_tx_rx_buffer(tx_buffer, rx_buffer);
-	parse_tmc_spi_status(rx_buffer[0]);
+	if (parse_rx_buffer_cb) {
+		parse_rx_buffer_cb(rx_buffer);
+	}
 	return status;
 }
 
 int tmc_spi_write_register(const struct spi_dt_spec *bus, const uint8_t write_bit,
-			   const uint8_t register_address, const uint32_t data)
+			   const uint8_t register_address, const uint32_t data,
+			   parse_rx_buffer_cb_t parse_rx_buffer_cb)
 {
 	uint8_t tx_buffer[BUFFER_SIZE] = {write_bit | register_address, data >> 24, data >> 16,
 					  data >> 8, data};
@@ -112,7 +103,9 @@ int tmc_spi_write_register(const struct spi_dt_spec *bus, const uint8_t write_bi
 	}
 
 	print_tx_rx_buffer(tx_buffer, rx_buffer);
-	parse_tmc_spi_status(rx_buffer[0]);
+	if (parse_rx_buffer_cb) {
+		parse_rx_buffer_cb(rx_buffer);
+	}
 
 	return status;
 }

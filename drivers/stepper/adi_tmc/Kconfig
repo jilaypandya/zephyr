@@ -10,13 +10,6 @@ menuconfig STEPPER_ADI_TMC
 
 if STEPPER_ADI_TMC
 
-config STEPPER_ADI_TMC_SPI
-	bool "Use Trinamic Stepper Controller with SPI"
-	depends on STEPPER_ADI_TMC
-	select SPI
-	help
-	  A Trinamic Stepper Controller with SPI is enabled
-
 comment "Trinamic Stepper Drivers"
 
 rsource "Kconfig.tmc22xx"
