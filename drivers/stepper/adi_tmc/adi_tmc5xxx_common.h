@@ -13,6 +13,7 @@
 #define ZEPHYR_DRIVERS_STEPPER_ADI_TMC_ADI_TMC5XXX_COMMON_H_
 
 #include "adi_tmc_reg.h"
+#include "adi_tmc_spi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,6 +25,44 @@ extern "C" {
  *
  * @{
  */
+
+/**
+ * @brief TMC5xxx configuration structure
+ *
+ * This structure contains the configuration parameters for the TMC5xxx
+ * stepper controller.
+ */
+struct tmc5xxx_config {
+	const uint32_t gconf;
+	struct spi_dt_spec spi;
+	const uint32_t clock_frequency;
+};
+
+struct tmc5xxx_data {
+	struct k_sem sem;
+};
+
+/**
+ * @brief Write a value to a TMC5xxx register
+ *
+ * @param dev Pointer to the device structure
+ * @param reg_addr Register address
+ * @param reg_val Value to write to the register
+ *
+ * @return 0 on success, or a negative error code on failure
+ */
+int tmc5xxx_write(const struct device *dev, const uint8_t reg_addr, const uint32_t reg_val);
+
+/**
+ * @brief Read a value from a TMC5xxx register
+ *
+ * @param dev Pointer to the device structure
+ * @param reg_addr Register address
+ * @param reg_val Pointer to store the read value
+ *
+ * @return 0 on success, or a negative error code on failure
+ */
+int tmc5xxx_read(const struct device *dev, const uint8_t reg_addr, uint32_t *reg_val);
 
 /**
  * @brief Calculate the velocity in full clock cycles from the velocity in Hz
