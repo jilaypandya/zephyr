@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+config ZEPHYR_STEPPER_MOTION_CONTROL
+	bool "Zephyr SW based Stepper motor control"
+	depends on DT_HAS_ZEPHYR_STEPPER_CONTROL_ENABLED
+	default y
+
+if ZEPHYR_STEPPER_MOTION_CONTROL
+
+config ZEPHYR_STEPPER_MOTION_CONTROL_COUNTER_TIMING
+	bool "Counter use for stepping"
+	select COUNTER
+	default y
+	help
+	  Enable usage of a counter device for accurate stepping.
+
+module = ZEPHYR_STEPPER_MOTION_CONTROL
+module-str = zephyr_stepper_motion_control
+
+rsource "../Kconfig.stepper_event_template"
+
+endif

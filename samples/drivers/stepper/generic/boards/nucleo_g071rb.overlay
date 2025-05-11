@@ -1,17 +1,31 @@
 / {
 	aliases {
 		stepper = &gpio_stepper;
+		stepper-motion-control = &stepper_motion_control;
+	};
+};
+
+&timers7 {
+	st,prescaler = <79>;
+	counter: counter {
+		status = "okay";
 	};
 };
 
 / {
-	gpio_stepper: gpio_stepper {
-		compatible = "zephyr,gpio-stepper";
+	stepper_motion_control: stepper_motion_control {
+		compatible = "zephyr,stepper-control";
 		status = "okay";
-		micro-step-res = <2>;
-		gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>,	/* D8 */
-			<&gpioc 7 GPIO_ACTIVE_HIGH>,	/* D9 */
-			<&gpiob 0 GPIO_ACTIVE_HIGH>,	/* D10 */
-			<&gpioa 7 GPIO_ACTIVE_HIGH>;	/* D11 */
+		step-tick-ns = <1000000>;
+		counter = <&counter>;
+		gpio_stepper: stepper {
+			compatible = "zephyr,gpio-stepper";
+			status = "okay";
+			micro-step-res = <2>;
+			gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>,	/* D8 */
+					<&gpioc 7 GPIO_ACTIVE_HIGH>,	/* D9 */
+					<&gpiob 0 GPIO_ACTIVE_HIGH>,	/* D10 */
+					<&gpioa 7 GPIO_ACTIVE_HIGH>;	/* D11 */
+		};
 	};
 };
