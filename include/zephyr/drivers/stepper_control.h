@@ -352,6 +352,33 @@ static inline int z_impl_stepper_motion_control_set_event_callback(
 	return api->set_event_callback(dev, callback, user_data);
 }
 
+__subsystem struct stepper_controller_driver_api {
+	int (*write)(const struct device *dev, const uint8_t reg_addr, const uint32_t reg_val);
+	int (*read)(const struct device *dev, const uint8_t reg_addr, uint32_t *reg_val);
+};
+
+
+__syscall int stepper_controller_read(const struct device *dev, const uint8_t reg_addr,
+			      uint32_t *reg_val);
+
+static inline int z_impl_stepper_controller_read(const struct device *dev, const uint8_t reg_addr,
+					       uint32_t *reg_val)
+{
+	const struct stepper_controller_driver_api *api = dev->api;
+
+	return api->read(dev, reg_addr, reg_val);
+}
+
+__syscall int stepper_controller_write(const struct device *dev, const uint8_t reg_addr,
+				       const uint32_t reg_val);
+
+static inline int z_impl_stepper_controller_write(const struct device *dev, const uint8_t reg_addr,
+				       const uint32_t reg_val)
+{
+	const struct stepper_controller_driver_api *api = dev->api;
+
+	return api->write(dev, reg_addr, reg_val);
+}
 /**
  * @}
  */
