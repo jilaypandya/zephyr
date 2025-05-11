@@ -22,6 +22,7 @@ config STEPPER_CONTROL_INIT_PRIORITY
 comment "Stepper Control Drivers"
 
 # zephyr-keep-sorted-start
+rsource "adi_tmc/Kconfig"
 rsource "zephyr_stepper_motion_control/Kconfig"
 # zephyr-keep-sorted-stop
 
