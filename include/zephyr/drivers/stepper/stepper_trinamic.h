@@ -223,7 +223,7 @@ int tmc50xx_stepper_set_ramp(const struct device *dev,
  * @retval -EIO General input / output error
  * @retval 0 Success
  */
-int tmc50xx_stepper_control_set_max_velocity(const struct device *dev, uint32_t velocity);
+int tmc50xx_stepper_motion_control_set_max_velocity(const struct device *dev, uint32_t velocity);
 
 /**
  * @}

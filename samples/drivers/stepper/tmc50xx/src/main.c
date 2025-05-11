@@ -62,7 +62,7 @@ int main(void)
 	/* Change Max Velocity during runtime */
 	int32_t tmc_velocity =
 		DT_PROP(DT_ALIAS(stepper_motion_controller), vmax) * CONFIG_MAX_VELOCITY_MULTIPLIER;
-	(void)tmc50xx_stepper_control_set_max_velocity(stepper_control, tmc_velocity);
+	(void)tmc50xx_stepper_motion_control_set_max_velocity(stepper_control, tmc_velocity);
 
 	for (;;) {
 		if (k_sem_take(&steps_completed_sem, K_FOREVER) == 0) {

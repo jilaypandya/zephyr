@@ -54,7 +54,7 @@ description: |
     };
 
 
-compatible: "adi,tmc5xxx_stepper_driver"
+compatible: "adi,tmc5xxx-stepper-driver"
 
 include:
   - name: stepper.yaml
