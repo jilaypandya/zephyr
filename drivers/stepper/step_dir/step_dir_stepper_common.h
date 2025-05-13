@@ -62,7 +62,6 @@ struct step_dir_stepper_common_config {
  */
 struct step_dir_stepper_common_data {
 	struct k_spinlock lock;
-	enum stepper_direction direction;
 	stepper_event_callback_t callback;
 	void *event_cb_user_data;
 };
@@ -97,6 +96,32 @@ struct step_dir_stepper_common_data {
  * @retval -errno Negative errno in case of failure.
  */
 int step_dir_stepper_common_init(const struct device *dev);
+
+/**
+ * @brief Common function to perform a step on a step direction stepper device.
+ *
+ * This function must be called to perform a step.
+ *
+ * @param dev Step direction stepper device instance.
+ *
+ * @retval 0 If step performed successfully.
+ * @retval -errno Negative errno in case of failure.
+ */
+int step_dir_stepper_common_step(const struct device *dev);
+
+/**
+ * @brief Common function to set the direction of a step direction stepper device.
+ *
+ * This function must be called to set the direction.
+ *
+ * @param dev Step direction stepper device instance.
+ * @param dir Direction to set.
+ *
+ * @retval 0 If direction set successfully.
+ * @retval -errno Negative errno in case of failure.
+ */
+int step_dir_stepper_common_set_direction(const struct device *dev,
+					  const enum stepper_direction dir);
 
 /** @} */
 

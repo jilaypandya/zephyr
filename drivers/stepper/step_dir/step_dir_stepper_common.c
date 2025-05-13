@@ -8,23 +8,12 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(step_dir_stepper, CONFIG_STEPPER_LOG_LEVEL);
 
-static inline int step_dir_stepper_perform_step(const struct device *dev)
+int step_dir_stepper_common_step(const struct device *dev)
 {
 	const struct step_dir_stepper_common_config *config = dev->config;
 	struct step_dir_stepper_common_data *data = dev->data;
 	int ret;
 
-	switch (data->direction) {
-	case STEPPER_DIRECTION_POSITIVE:
-		ret = gpio_pin_set_dt(&config->dir_pin, 1 ^ config->invert_direction);
-		break;
-	case STEPPER_DIRECTION_NEGATIVE:
-		ret = gpio_pin_set_dt(&config->dir_pin, 0 ^ config->invert_direction);
-		break;
-	default:
-		LOG_ERR("Unsupported direction: %d", data->direction);
-		return -ENOTSUP;
-	}
 	if (ret < 0) {
 		LOG_ERR("Failed to set direction: %d", ret);
 		return ret;
@@ -45,6 +34,28 @@ static inline int step_dir_stepper_perform_step(const struct device *dev)
 	}
 
 	return 0;
+}
+
+int step_dir_stepper_common_set_direction(const struct device *dev,
+					  const enum stepper_direction dir)
+{
+	const struct step_dir_stepper_common_config *config = dev->config;
+	struct step_dir_stepper_common_data *data = dev->data;
+	int ret;
+
+	switch (dir) {
+	case STEPPER_DIRECTION_POSITIVE:
+		ret = gpio_pin_set_dt(&config->dir_pin, 1 ^ config->invert_direction);
+		break;
+	case STEPPER_DIRECTION_NEGATIVE:
+		ret = gpio_pin_set_dt(&config->dir_pin, 0 ^ config->invert_direction);
+		break;
+	default:
+		LOG_ERR("Unsupported direction: %d", data->direction);
+		return -ENOTSUP;
+	}
+
+	return step_dir_stepper_common_step(dev);
 }
 
 int step_dir_stepper_common_init(const struct device *dev)
