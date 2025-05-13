@@ -15,14 +15,12 @@ description: |
 compatible: "zephyr,stepper-control"
 
 properties:
-  stepper:
-    type: phandle
-    required: true
-    description: |
-      The phandle to the stepper motor driver node.
-
   step-tick-ns:
     type: int
     required: true
     description: |
       The time in nanoseconds between each step signal.
+
+  counter:
+    type: phandle
+    description: Counter used for generating step-accurate pulse signals.

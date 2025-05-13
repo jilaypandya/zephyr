@@ -4,3 +4,5 @@
 zephyr_library()
 
 zephyr_library_sources(stepper_control.c)
+zephyr_library_sources(stepper_motion_control_work_timing.c)
+zephyr_library_sources_ifdef(CONFIG_ZEPHYR_STEPPER_MOTION_CONTROL_COUNTER_TIMING stepper_motion_control_counter_timing.c)
