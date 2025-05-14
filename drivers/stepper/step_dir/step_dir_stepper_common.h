@@ -17,9 +17,6 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/stepper.h>
-#include <zephyr/drivers/counter.h>
-
-#include "step_dir_stepper_timing_source.h"
 
 /**
  * @brief Common step direction stepper config.
@@ -61,17 +58,14 @@ struct step_dir_stepper_common_config {
  * This structure **must** be placed first in the driver's data structure.
  */
 struct step_dir_stepper_common_data {
-	struct k_spinlock lock;
-	stepper_event_callback_t callback;
-	void *event_cb_user_data;
+
 };
 
 /**
  * @brief Initialize common step direction stepper data from devicetree instance.
  * @param inst Instance.
  */
-#define STEP_DIR_STEPPER_DT_INST_COMMON_DATA_INIT(inst)                                            \
-	STEP_DIR_STEPPER_DT_COMMON_DATA_INIT(DT_DRV_INST(inst))
+#define STEP_DIR_STEPPER_DT_INST_COMMON_DATA_INIT(inst) {}
 
 /**
  * @brief Validate the offset of the common data structures.
