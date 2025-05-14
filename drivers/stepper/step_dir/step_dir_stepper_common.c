@@ -11,15 +11,7 @@ LOG_MODULE_REGISTER(step_dir_stepper, CONFIG_STEPPER_LOG_LEVEL);
 int step_dir_stepper_common_step(const struct device *dev)
 {
 	const struct step_dir_stepper_common_config *config = dev->config;
-	struct step_dir_stepper_common_data *data = dev->data;
-	int ret;
-
-	if (ret < 0) {
-		LOG_ERR("Failed to set direction: %d", ret);
-		return ret;
-	}
-
-	ret = gpio_pin_toggle_dt(&config->step_pin);
+	int ret = gpio_pin_toggle_dt(&config->step_pin);
 	if (ret < 0) {
 		LOG_ERR("Failed to toggle step pin: %d", ret);
 		return ret;
@@ -40,7 +32,6 @@ int step_dir_stepper_common_set_direction(const struct device *dev,
 					  const enum stepper_direction dir)
 {
 	const struct step_dir_stepper_common_config *config = dev->config;
-	struct step_dir_stepper_common_data *data = dev->data;
 	int ret;
 
 	switch (dir) {
@@ -51,11 +42,11 @@ int step_dir_stepper_common_set_direction(const struct device *dev,
 		ret = gpio_pin_set_dt(&config->dir_pin, 0 ^ config->invert_direction);
 		break;
 	default:
-		LOG_ERR("Unsupported direction: %d", data->direction);
+		LOG_ERR("Unsupported direction: %d", dir);
 		return -ENOTSUP;
 	}
 
-	return step_dir_stepper_common_step(dev);
+	return ret;
 }
 
 int step_dir_stepper_common_init(const struct device *dev)
