@@ -30,7 +30,7 @@ static int tmc22xx_stepper_enable(const struct device *dev)
 	const struct tmc22xx_config *config = dev->config;
 
 	LOG_DBG("Enabling Stepper motor controller %s", dev->name);
-	return gpio_pin_set_dt(&config->enable_pin, 1);
+	return gpio_pin_set_dt(&config->enable_pin, 0);
 }
 
 static int tmc22xx_stepper_disable(const struct device *dev)
@@ -38,7 +38,7 @@ static int tmc22xx_stepper_disable(const struct device *dev)
 	const struct tmc22xx_config *config = dev->config;
 
 	LOG_DBG("Disabling Stepper motor controller %s", dev->name);
-	return gpio_pin_set_dt(&config->enable_pin, 0);
+	return gpio_pin_set_dt(&config->enable_pin, 1);
 }
 
 static int tmc22xx_stepper_set_micro_step_res(const struct device *dev,
