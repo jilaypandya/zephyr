@@ -150,7 +150,8 @@ static int z_stepper_motion_control_move_to(const struct device *dev, int32_t mi
 	return z_stepper_motion_control_move_by(dev, steps_to_move);
 }
 
-static int z_stepper_motion_control_run(const struct device *dev, const enum stepper_direction direction)
+static int z_stepper_motion_control_run(const struct device *dev,
+					const enum stepper_direction direction)
 {
 	const struct stepper_motion_control_config *config = dev->config;
 	struct stepper_motion_control_data *data = dev->data;
@@ -186,7 +187,8 @@ static int z_stepper_motion_control_stop(const struct device *dev)
 	return 0;
 }
 
-static int z_stepper_motion_control_set_reference_position(const struct device *dev, int32_t position)
+static int z_stepper_motion_control_set_reference_position(const struct device *dev,
+							   int32_t position)
 {
 	struct stepper_motion_control_data *data = dev->data;
 
@@ -207,7 +209,7 @@ static int z_stepper_motion_control_get_actual_position(const struct device *dev
 }
 
 static int z_stepper_motion_control_set_step_interval(const struct device *dev,
-					       uint64_t microstep_interval_ns)
+						      uint64_t microstep_interval_ns)
 {
 	const struct stepper_motion_control_config *config = dev->config;
 	struct stepper_motion_control_data *data = dev->data;
@@ -289,7 +291,8 @@ static void velocity_mode_task(const struct device *dev)
 	}
 }
 
-static int z_stepper_motion_control_set_mode(const struct device *dev, enum stepper_motion_control_mode mode)
+static int z_stepper_motion_control_set_mode(const struct device *dev,
+					     enum stepper_motion_control_mode mode)
 {
 	if (mode == STEPPER_MOTION_CONTROL_MODE_RAMP) {
 		return -ENOTSUP;
@@ -298,8 +301,8 @@ static int z_stepper_motion_control_set_mode(const struct device *dev, enum step
 }
 
 static int z_stepper_motion_control_set_event_callback(const struct device *dev,
-						stepper_motion_control_event_callback_t cb,
-						void *user_data)
+						       stepper_motion_control_event_callback_t cb,
+						       void *user_data)
 {
 	struct stepper_motion_control_data *data = dev->data;
 
@@ -346,7 +349,8 @@ static int stepper_motion_control_init(const struct device *dev)
 	}
 #ifdef CONFIG_ZEPHYR_STEPPER_MOTION_CONTROL_GENERATE_ISR_SAFE_EVENTS
 
-	k_msgq_init(&data->event_msgq, data->event_msgq_buffer, sizeof(enum stepper_motion_control_event),
+	k_msgq_init(&data->event_msgq, data->event_msgq_buffer,
+		    sizeof(enum stepper_motion_control_event),
 		    CONFIG_ZEPHYR_STEPPER_MOTION_CONTROL_EVENT_QUEUE_LEN);
 	k_work_init(&data->event_callback_work, stepper_work_event_handler);
 #endif /* CONFIG_ZEPHYR_STEPPER_MOTION_CONTROL_GENERATE_ISR_SAFE_EVENTS */
@@ -368,21 +372,22 @@ static DEVICE_API(stepper_motion_control, stepper_motion_control_api) = {
 	.set_event_callback = z_stepper_motion_control_set_event_callback,
 };
 
-#define STEPPER_MOTION_CONTROL_DEFINE(inst)                                                               \
-	static const struct stepper_motion_control_config stepper_motion_control_config_##inst = {               \
+#define STEPPER_MOTION_CONTROL_DEFINE(inst)                                                        \
+	static const struct stepper_motion_control_config stepper_motion_control_config_##inst = { \
 		.stepper = DEVICE_DT_GET(DT_INST_CHILD(inst, stepper)),                            \
 		.timing_config.counter =                                                           \
 			DEVICE_DT_GET_OR_NULL(DT_PHANDLE(DT_DRV_INST(inst), counter)),             \
 		.timing_source = COND_CODE_1(DT_INST_NODE_HAS_PROP(inst, counter),                 \
 			(&step_counter_timing_source_api), (&step_work_timing_source_api)),        \
 	};                                                                                         \
-	struct stepper_motion_control_data stepper_motion_control_data_##inst = {                                \
+	struct stepper_motion_control_data stepper_motion_control_data_##inst = {                  \
 		.timing_data.microstep_interval_ns = DT_INST_PROP(inst, step_tick_ns),             \
 		.timing_data.motion_control_dev = DEVICE_DT_GET(DT_DRV_INST(inst)),                \
 		.timing_data.stepper_handle_timing_signal_cb = stepper_handle_timing_signal,       \
 	};                                                                                         \
-	DEVICE_DT_INST_DEFINE(inst, stepper_motion_control_init, NULL, &stepper_motion_control_data_##inst,      \
-			      &stepper_motion_control_config_##inst, POST_KERNEL,                         \
+	DEVICE_DT_INST_DEFINE(inst, stepper_motion_control_init, NULL,                             \
+			      &stepper_motion_control_data_##inst,                                 \
+			      &stepper_motion_control_config_##inst, POST_KERNEL,                  \
 			      CONFIG_STEPPER_CONTROL_INIT_PRIORITY, &stepper_motion_control_api);
 
 DT_INST_FOREACH_STATUS_OKAY(STEPPER_MOTION_CONTROL_DEFINE)
