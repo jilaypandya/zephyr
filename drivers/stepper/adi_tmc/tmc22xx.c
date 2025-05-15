@@ -19,11 +19,10 @@ struct tmc22xx_config {
 };
 
 struct tmc22xx_data {
-	struct step_dir_stepper_common_data common;
 	enum stepper_micro_step_resolution resolution;
 };
 
-STEP_DIR_STEPPER_STRUCT_CHECK(struct tmc22xx_config, struct tmc22xx_data);
+STEP_DIR_STEPPER_STRUCT_CHECK(struct tmc22xx_config);
 
 static int tmc22xx_stepper_enable(const struct device *dev)
 {
@@ -176,7 +175,6 @@ static DEVICE_API(stepper, tmc22xx_stepper_api) = {
 		(.msx_pins = tmc22xx_stepper_msx_pins_##inst))					   \
 	};                                                                                         \
 	static struct tmc22xx_data tmc22xx_data_##inst = {                                         \
-		.common = STEP_DIR_STEPPER_DT_INST_COMMON_DATA_INIT(inst),                         \
 		.resolution = DT_INST_PROP(inst, micro_step_res),                                  \
 	};                                                                                         \
 	DEVICE_DT_INST_DEFINE(inst, tmc22xx_stepper_init, NULL, &tmc22xx_data_##inst,              \

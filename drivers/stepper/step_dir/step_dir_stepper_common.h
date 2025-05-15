@@ -56,13 +56,10 @@ struct step_dir_stepper_common_config {
  * @brief Validate the offset of the common data structures.
  *
  * @param config Name of the config structure.
- * @param data Name of the data structure.
  */
-#define STEP_DIR_STEPPER_STRUCT_CHECK(config, data)                                                \
+#define STEP_DIR_STEPPER_STRUCT_CHECK(config)                                                      \
 	BUILD_ASSERT(offsetof(config, common) == 0,                                                \
-		     "struct step_dir_stepper_common_config must be placed first");                \
-	BUILD_ASSERT(offsetof(data, common) == 0,                                                  \
-		     "struct step_dir_stepper_common_data must be placed first");
+		     "struct step_dir_stepper_common_config must be placed first");
 
 /**
  * @brief Common function to initialize a step direction stepper device at init time.
