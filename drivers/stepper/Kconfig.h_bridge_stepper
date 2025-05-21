@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+config H_BRIDGE_STEPPER
+	bool "Activate driver for h bridge stepper control"
+	depends on DT_HAS_ZEPHYR_H_BRIDGE_STEPPER_ENABLED
+	default y

@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
-#                         Copyright (c) 2025 Andre Stefanov
+# SPDX-FileCopyrightText: Copyright (c) 2025 Andre Stefanov
 # SPDX-License-Identifier: Apache-2.0
 
 menuconfig STEPPER_RAMP

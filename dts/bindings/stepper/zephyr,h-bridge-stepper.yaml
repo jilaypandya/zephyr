@@ -1,21 +1,20 @@
-# SPDX-FileCopyrightText: Copyright (c) 2024 Carl Zeiss Meditec AG
-# SPDX-FileCopyrightText: Copyright (c) 2024 Jilay Sandeep Pandya
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
 # SPDX-License-Identifier: Apache-2.0
 
 description: |
-  GPIO Stepper Controller for darlington transistor arrays or dual H-bridge
+  H Bridge Stepper Driver for darlington transistor arrays or dual H-bridge
 
   Example:
     /* Lead A is connected Lead C and Lead B is connected to Lead D*/
     stepper: stepper {
-        compatible = "zephyr,gpio-stepper";
+        compatible = "zephyr,h-bridge-stepper";
         gpios = <&gpioa 9 GPIO_ACTIVE_HIGH>,  /* Lead A1/A */
                 <&gpioc 7 GPIO_ACTIVE_HIGH>,  /* Lead B1/B */
                 <&gpiob 0 GPIO_ACTIVE_HIGH>,  /* Lead A2/C */
                 <&gpioa 7 GPIO_ACTIVE_HIGH>;  /* Lead B2/D */
     };
 
-compatible: "zephyr,gpio-stepper"
+compatible: "zephyr,h-bridge-stepper"
 
 include: [stepper-controller.yaml, ramp-parameters.yaml]
 
