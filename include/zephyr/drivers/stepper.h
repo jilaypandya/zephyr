@@ -142,6 +142,23 @@ typedef int (*stepper_set_micro_step_res_t)(const struct device *dev,
  */
 typedef int (*stepper_get_micro_step_res_t)(const struct device *dev,
 					    enum stepper_micro_step_resolution *resolution);
+
+/**
+ * @brief Do a step
+ *
+ * @see stepper_step() for details.
+ */
+typedef int (*stepper_step_t)(const struct device *dev);
+
+/**
+ * @brief Stop the stepper
+ * @brief Set the stepper direction
+ *
+ * @see stepper_stop() for details.
+ * @see stepper_set_direction() for details.
+ */
+typedef int (*stepper_set_direction_t)(const struct device *dev,
+				       const enum stepper_direction direction);
 /**
  * @brief Set the reference position of the stepper
  *
@@ -219,6 +236,8 @@ __subsystem struct stepper_driver_api {
 	stepper_disable_t disable;
 	stepper_set_micro_step_res_t set_micro_step_res;
 	stepper_get_micro_step_res_t get_micro_step_res;
+	stepper_set_direction_t set_direction;
+	stepper_step_t step;
 	stepper_set_reference_position_t set_reference_position;
 	stepper_get_actual_position_t get_actual_position;
 	stepper_set_event_callback_t set_event_callback;
@@ -254,6 +273,28 @@ static inline int z_impl_stepper_enable(const struct device *dev)
 }
 
 /**
+ * @brief Do a step.
+ * @details This function will cause the stepper to do one micro-step.
+ * This function is typically used in step-dir stepper drivers where
+ * an external stepper motion controller is used to control the stepper.
+ * Counting the number of steps is the responsibility of the stepper motion controller,
+ * which will call this function for each step.
+ *
+ * @param dev pointer to the stepper driver instance
+ *
+ * @retval -EIO General input / output error
+ * @retval 0 Success
+ */
+__syscall int stepper_step(const struct device *dev);
+
+static inline int z_impl_stepper_step(const struct device *dev)
+{
+	const struct stepper_driver_api *api = (const struct stepper_driver_api *)dev->api;
+
+	return api->step(dev);
+}
+
+/**
  * @brief Disable stepper driver
  *
  * @details Disabling the driver shall cancel all active movements and de-energize the coils.
@@ -272,6 +313,28 @@ static inline int z_impl_stepper_disable(const struct device *dev)
 	return api->disable(dev);
 }
 
+/**
+ * @brief Set the stepper direction
+ * @details This function sets the direction of the stepper motor.
+ * For step-dir stepper drivers, this function is used to set the dir pin
+ * For h-bridge stepper drivers, this function is used to set the direction flag.
+ *
+ * @param dev pointer to the stepper driver instance
+ * @param direction The direction to set
+ *
+ * @retval -EIO General input / output error
+ * @retval 0 Success
+ */
+__syscall int stepper_set_direction(const struct device *dev,
+				    const enum stepper_direction direction);
+
+static inline int z_impl_stepper_set_direction(const struct device *dev,
+					       const enum stepper_direction direction)
+{
+	const struct stepper_driver_api *api = (const struct stepper_driver_api *)dev->api;
+
+	return api->set_direction(dev, direction);
+}
 /**
  * @brief Set the micro-step resolution in stepper driver
  *

@@ -44,7 +44,8 @@ static void drv84xx_api_print_event_callback(const struct device *dev, enum step
 static void *drv84xx_api_setup(void)
 {
 	static struct drv84xx_api_fixture fixture = {
-		.dev = DEVICE_DT_GET(DT_ALIAS(stepper)),
+		.stepper = DEVICE_DT_GET(DT_ALIAS(stepper)),
+		.stepper_motion_control = DEVICE_DT_GET(DT_ALIAS(stepper_motion_control)),
 		.callback = drv84xx_api_print_event_callback,
 	};
 
@@ -52,14 +53,15 @@ static void *drv84xx_api_setup(void)
 	k_poll_event_init(&stepper_event, K_POLL_TYPE_SIGNAL, K_POLL_MODE_NOTIFY_ONLY,
 			  &stepper_signal);
 
-	zassert_not_null(fixture.dev);
+	zassert_not_null(fixture.stepper);
+	zassert_not_null(fixture.stepper_motion_control);
 	return &fixture;
 }
 
 static void drv84xx_api_before(void *f)
 {
 	struct drv84xx_api_fixture *fixture = f;
-	(void)stepper_set_reference_position(fixture->dev, 0);
+	(void)stepper_set_reference_position(fixture->stepper_motion_control, 0);
 	(void)stepper_set_micro_step_res(fixture->dev, 1);
 	k_poll_signal_reset(&stepper_signal);
 }
@@ -82,8 +84,8 @@ ZTEST_F(drv84xx_api, test_micro_step_res_set)
 ZTEST_F(drv84xx_api, test_actual_position_set)
 {
 	int32_t pos = 100u;
-	(void)stepper_set_reference_position(fixture->dev, pos);
-	(void)stepper_get_actual_position(fixture->dev, &pos);
+	(void)stepper_set_reference_position(fixture->stepper_motion_control, pos);
+	(void)stepper_get_actual_position(fixture->stepper_motion_control, &pos);
 	zassert_equal(pos, 100u, "Actual position should be %u but is %u", 100u, pos);
 }
 
@@ -94,9 +96,9 @@ ZTEST_F(drv84xx_api, test_is_not_moving_when_disabled)
 
 	(void)stepper_enable(fixture->dev);
 	(void)stepper_set_microstep_interval(fixture->dev, 20000000);
-	(void)stepper_move_by(fixture->dev, steps);
+	(void)stepper_move_by(fixture->stepper_motion_control, steps);
 	(void)stepper_disable(fixture->dev);
-	(void)stepper_is_moving(fixture->dev, &moving);
+	(void)stepper_is_moving(fixture->stepper_motion_control, &moving);
 	zassert_false(moving, "Driver should not be in state is_moving after being disabled");
 }
 
@@ -107,12 +109,12 @@ ZTEST_F(drv84xx_api, test_position_not_updating_when_disabled)
 	int32_t position_2 = 0;
 
 	(void)stepper_enable(fixture->dev);
-	(void)stepper_set_microstep_interval(fixture->dev, 20000000);
-	(void)stepper_move_by(fixture->dev, steps);
+	(void)stepper_set_microstep_interval(fixture->stepper_motion_control, 20000000);
+	(void)stepper_move_by(fixture->stepper_motion_control, steps);
 	(void)stepper_disable(fixture->dev);
-	(void)stepper_get_actual_position(fixture->dev, &position_1);
+	(void)stepper_get_actual_position(fixture->stepper_motion_control, &position_1);
 	k_msleep(100);
-	(void)stepper_get_actual_position(fixture->dev, &position_2);
+	(void)stepper_get_actual_position(fixture->stepper_motion_control, &position_2);
 	zassert_equal(position_2, position_1,
 		      "Actual position should not have changed from %d but is %d", position_1,
 		      position_2);
@@ -124,13 +126,13 @@ ZTEST_F(drv84xx_api, test_is_not_moving_when_reenabled_after_movement)
 	bool moving = true;
 
 	(void)stepper_enable(fixture->dev);
-	(void)stepper_set_microstep_interval(fixture->dev, 20000000);
-	(void)stepper_move_by(fixture->dev, steps);
+	(void)stepper_set_microstep_interval(fixture->stepper_motion_control, 20000000);
+	(void)stepper_move_by(fixture->stepper_motion_control, steps);
 	(void)stepper_disable(fixture->dev);
 	(void)k_msleep(100);
 	(void)stepper_enable(fixture->dev);
 	(void)k_msleep(100);
-	(void)stepper_is_moving(fixture->dev, &moving);
+	(void)stepper_is_moving(fixture->stepper_motion_control, &moving);
 	zassert_false(moving, "Driver should not be in state is_moving after being reenabled");
 }
 ZTEST_F(drv84xx_api, test_position_not_updating_when_reenabled_after_movement)
@@ -140,14 +142,14 @@ ZTEST_F(drv84xx_api, test_position_not_updating_when_reenabled_after_movement)
 	int32_t position_2 = 0;
 
 	(void)stepper_enable(fixture->dev);
-	(void)stepper_set_microstep_interval(fixture->dev, 20000000);
-	(void)stepper_move_by(fixture->dev, steps);
+	(void)stepper_set_microstep_interval(fixture->stepper_motion_control, 20000000);
+	(void)stepper_move_by(fixture->stepper_motion_control, steps);
 	(void)stepper_disable(fixture->dev);
-	(void)stepper_get_actual_position(fixture->dev, &position_1);
+	(void)stepper_get_actual_position(fixture->stepper_motion_control, &position_1);
 	(void)k_msleep(100);
 	(void)stepper_enable(fixture->dev);
 	(void)k_msleep(100);
-	(void)stepper_get_actual_position(fixture->dev, &position_2);
+	(void)stepper_get_actual_position(fixture->stepper_motion_control, &position_2);
 	zassert_equal(position_2, position_1,
 		      "Actual position should not have changed from %d but is %d", position_1,
 		      position_2);

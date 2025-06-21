@@ -27,6 +27,7 @@ config STEPPER_SHELL
 comment "Stepper Driver Common"
 
 rsource "step_dir/Kconfig"
+rsource "stepper_motion_controllers/Kconfig"
 
 comment "Stepper Drivers"
 

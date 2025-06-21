@@ -22,6 +22,13 @@
 		en-gpios = <&gpio2 1 0>;
 		m0-gpios = <&gpio3 0 0>;
 		m1-gpios = <&gpio3 1 0>;
-		counter = <&counter0>;
+	};
+
+	stepper_motion_control: stepper_motion_control {
+		compatible = "zephyr,stepper-motion-control";
+		status = "okay";
+		step-tick-ns = <1000000>;
+		counter = <&counter>;
+		stepper = <&allegro_a4979>;
 	};
 };

@@ -8,6 +8,7 @@ add_subdirectory_ifdef(CONFIG_STEPPER_ADI_TMC adi_tmc)
 add_subdirectory_ifdef(CONFIG_STEPPER_ALLEGRO allegro)
 add_subdirectory_ifdef(CONFIG_STEPPER_TI ti)
 add_subdirectory_ifdef(CONFIG_STEP_DIR_STEPPER step_dir)
+add_subdirectory_ifdef(CONFIG_ZEPHYR_STEPPER_MOTION_CONTROL stepper_motion_controllers)
 # zephyr-keep-sorted-stop
 
 zephyr_library()
