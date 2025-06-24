@@ -14,6 +14,9 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(stepper_motion_control, CONFIG_STEPPER_LOG_LEVEL);
 
+/* Currently only one stepper is supported by the motion controller */
+#define MAX_SUPPORTED_STEPPER_IDX 0
+
 struct stepper_motion_control_config {
 	const struct device *stepper;
 	const struct timing_source_config timing_config;
@@ -49,7 +52,7 @@ void stepper_trigger_callback(const struct device *dev, enum stepper_event event
 	}
 
 	if (!k_is_in_isr()) {
-		data->callback(dev, event, data->event_cb_user_data);
+		data->callback(dev, MAX_SUPPORTED_STEPPER_IDX, event, data->event_cb_user_data);
 		return;
 	}
 
@@ -136,7 +139,8 @@ static int z_stepper_motion_control_move_by(const struct device *dev, int32_t mi
 	return 0;
 }
 
-static int z_stepper_motion_control_move_to(const struct device *dev, int32_t micro_steps)
+static int z_stepper_motion_control_move_to(const struct device *dev, const uint8_t stepper_index,
+					    int32_t micro_steps)
 {
 	struct stepper_motion_control_data *data = dev->data;
 	int32_t steps_to_move;
@@ -147,7 +151,7 @@ static int z_stepper_motion_control_move_to(const struct device *dev, int32_t mi
 	return z_stepper_motion_control_move_by(dev, steps_to_move);
 }
 
-static int z_stepper_motion_control_run(const struct device *dev,
+static int z_stepper_motion_control_run(const struct device *dev, const uint8_t stepper_index,
 					const enum stepper_direction direction)
 {
 	const struct stepper_motion_control_config *config = dev->config;
@@ -164,7 +168,7 @@ static int z_stepper_motion_control_run(const struct device *dev,
 	return 0;
 }
 
-static int z_stepper_motion_control_stop(const struct device *dev)
+static int z_stepper_motion_control_stop(const struct device *dev, const uint8_t stepper_index)
 {
 	const struct stepper_motion_control_config *config = dev->config;
 	struct stepper_motion_control_data *data = dev->data;
@@ -181,6 +185,7 @@ static int z_stepper_motion_control_stop(const struct device *dev)
 }
 
 static int z_stepper_motion_control_set_reference_position(const struct device *dev,
+							   const uint8_t stepper_index,
 							   int32_t position)
 {
 	struct stepper_motion_control_data *data = dev->data;
@@ -191,7 +196,9 @@ static int z_stepper_motion_control_set_reference_position(const struct device *
 	return 0;
 }
 
-static int z_stepper_motion_control_get_actual_position(const struct device *dev, int32_t *position)
+static int z_stepper_motion_control_get_actual_position(const struct device *dev,
+							const uint8_t stepper_index,
+							int32_t *position)
 {
 	struct stepper_motion_control_data *data = dev->data;
 
@@ -202,6 +209,7 @@ static int z_stepper_motion_control_get_actual_position(const struct device *dev
 }
 
 static int z_stepper_motion_control_set_step_interval(const struct device *dev,
+						      const uint8_t stepper_index,
 						      uint64_t microstep_interval_ns)
 {
 	const struct stepper_motion_control_config *config = dev->config;
@@ -221,7 +229,8 @@ static int z_stepper_motion_control_set_step_interval(const struct device *dev,
 	return 0;
 }
 
-static int z_stepper_motion_control_is_moving(const struct device *dev, bool *is_moving)
+static int z_stepper_motion_control_is_moving(const struct device *dev, const uint8_t stepper_index,
+					      bool *is_moving)
 {
 	const struct stepper_motion_control_config *config = dev->config;
 	struct stepper_motion_control_data *data = dev->data;
@@ -372,10 +381,6 @@ static int stepper_motion_control_init(const struct device *dev)
 }
 
 static DEVICE_API(stepper, zephyr_stepper_motion_control_api) = {
-	.enable = z_stepper_motion_control_enable,
-	.disable = z_stepper_motion_control_disable,
-	.set_micro_step_res = z_stepper_motion_control_set_micro_step_res,
-	.get_micro_step_res = z_stepper_motion_control_get_micro_step_res,
 	.move_to = z_stepper_motion_control_move_to,
 	.move_by = z_stepper_motion_control_move_by,
 	.run = z_stepper_motion_control_run,
