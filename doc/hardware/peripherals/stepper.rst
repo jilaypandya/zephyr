@@ -3,22 +3,28 @@
 Steppers
 ########
 
-The stepper driver API provides a set of functions for controlling and configuring stepper drivers.
+The stepper driver subsystem consists of two device driver APIs:
 
-Configure Stepper Driver
-========================
+Stepper Driver API
+==================
 
-- Configure **micro-stepping resolution** using :c:func:`stepper_set_micro_step_res`
-  and :c:func:`stepper_get_micro_step_res`.
+The stepper driver API provides a common interface for stepper drivers.
+
+- Configure **micro-stepping resolution** using :c:func:`stepper_drv_set_micro_step_res`
+  and :c:func:`stepper_drv_get_micro_step_res`.
+- **Enable** the stepper driver using :c:func:`stepper_drv_enable`.
+- **Disable** the stepper driver using :c:func:`stepper_drv_disable`.
+- Set the **direction** of the stepper using :c:func:`stepper_drv_set_direction`.
+- **Step** a single step using :c:func:`stepper_drv_step`.
+
+Stepper API
+===========
+
+The stepper API provides a common interface for stepper controllers.
+
 - Configure **reference position** in microsteps using :c:func:`stepper_set_reference_position`
   and :c:func:`stepper_get_actual_position`.
 - Set **step interval** in nanoseconds between steps using :c:func:`stepper_set_microstep_interval`
-- **Enable** the stepper driver using :c:func:`stepper_enable`.
-- **Disable** the stepper driver using :c:func:`stepper_disable`.
-
-Control Stepper
-===============
-
 - **Move by** +/- micro-steps also known as **relative movement** using :c:func:`stepper_move_by`.
 - **Move to** a specific position also known as **absolute movement** using :c:func:`stepper_move_to`.
 - Run continuously with a **constant step interval** in a specific direction until
@@ -26,6 +32,17 @@ Control Stepper
 - **Stop** the stepper using :c:func:`stepper_stop`.
 - Check if the stepper is **moving** using :c:func:`stepper_is_moving`.
 - Register an **event callback** using :c:func:`stepper_set_event_callback`.
+
+Driver Composition Scenarios
+============================
+
+Below are two typical scenarios:
+
+- **Combined Driver:** Implements both ``stepper`` and ``stepper_drv`` APIs in a single driver. For instance,
+  :dtcompatible:`adi,tmc50xx`
+- **Separated Drivers:** A motion control driver implements ``stepper`` API, for instance,
+  :dtcompatible:`zephyr,stepper-motion-control` and a hardware driver implements ``stepper_drv`` API, for instance,
+  :dtcompatible:`ti,drv84xx` or :dtcompatible:`zephyr,h-bridge-stepper`.
 
 Device Tree
 ===========
@@ -36,11 +53,6 @@ a device tree binding in Zephyr, and ideally, a set of hardware configuration op
 for things such as current settings, ramp parameters and furthermore. These can then
 be used in a boards devicetree to configure a stepper driver to its initial state.
 
-See examples in:
-
-- :dtcompatible:`zephyr,h-bridge-stepper`
-- :dtcompatible:`adi,tmc50xx`
-
 Discord
 =======
 
@@ -48,6 +60,7 @@ Zephyr has a `stepper discord`_ channel for stepper related discussions, which
 is open to all.
 
 .. _stepper-api-reference:
+.. _stepper-drv-api-reference:
 
 Stepper API Test Suite
 ======================
@@ -92,6 +105,10 @@ API Reference
 *************
 
 A common set of functions which should be implemented by all stepper drivers.
+
+.. doxygengroup:: stepper_drv_interface
+
+A common set of functions which should be implemented by all stepper controllers.
 
 .. doxygengroup:: stepper_interface
 
