@@ -12,6 +12,18 @@ module = STEPPER
 module-str = stepper
 source "subsys/logging/Kconfig.template.log_config"
 
+config STEPPER_DRV_API
+    bool "Stepper Driver API"
+    default y
+    help
+      Enable stepper driver API.
+
+config STEPPER_MOTION_CONTROL_API
+    bool "Stepper Motion Control API"
+    default y
+    help
+      Enable stepper motion control API.
+
 config STEPPER_INIT_PRIORITY
 	int "Stepper Motor Controller init priority"
 	default 90

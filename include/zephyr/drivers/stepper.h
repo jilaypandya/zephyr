@@ -211,23 +211,33 @@ typedef int (*stepper_stop_t)(const struct device *dev);
  */
 typedef int (*stepper_is_moving_t)(const struct device *dev, bool *is_moving);
 
+typedef int (*stepper_step_t)(const struct device *dev);
+
+typedef int (*stepper_set_direction_t)(const struct device *dev,
+					 const enum stepper_direction direction);
 /**
  * @brief Stepper Driver API
  */
 __subsystem struct stepper_driver_api {
+#ifdef CONFIG_STEPPER_DRV_API
+	stepper_step_t step;
+	stepper_set_direction_t set_direction;
 	stepper_enable_t enable;
 	stepper_disable_t disable;
 	stepper_set_micro_step_res_t set_micro_step_res;
 	stepper_get_micro_step_res_t get_micro_step_res;
+#endif
+#ifdef CONFIG_STEPPER_MOTION_CONTROL_API
 	stepper_set_reference_position_t set_reference_position;
 	stepper_get_actual_position_t get_actual_position;
-	stepper_set_event_callback_t set_event_callback;
 	stepper_set_microstep_interval_t set_microstep_interval;
 	stepper_move_by_t move_by;
 	stepper_move_to_t move_to;
 	stepper_run_t run;
 	stepper_stop_t stop;
 	stepper_is_moving_t is_moving;
+#endif
+	stepper_set_event_callback_t set_event_callback;
 };
 
 /**
