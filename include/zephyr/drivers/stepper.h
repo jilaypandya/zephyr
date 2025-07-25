@@ -105,14 +105,12 @@ enum stepper_run_mode {
 enum stepper_event {
 	/** Steps set using move_by or move_to have been executed */
 	STEPPER_EVENT_STEPS_COMPLETED = 0,
-	/** Stall detected */
-	STEPPER_EVENT_STALL_DETECTED = 1,
 	/** Left end switch status changes to pressed */
-	STEPPER_EVENT_LEFT_END_STOP_DETECTED = 2,
+	STEPPER_EVENT_LEFT_END_STOP_DETECTED = 1,
 	/** Right end switch status changes to pressed */
-	STEPPER_EVENT_RIGHT_END_STOP_DETECTED = 3,
+	STEPPER_EVENT_RIGHT_END_STOP_DETECTED = 2,
 	/** Stepper has stopped */
-	STEPPER_EVENT_STOPPED = 4,
+	STEPPER_EVENT_STOPPED = 3,
 };
 
 /**
@@ -480,6 +478,13 @@ static inline int z_impl_stepper_is_moving(const struct device *dev, const uint8
  * @{
  */
 
+enum stepper_drv_event {
+	/** Stepper driver stall detected */
+	STEPPER_DRV_EVENT_STALL_DETETCTED = 0,
+	/** Stepper driver fault detected */
+	STEPPER_DRV_EVENT_FAULT_DETECTED = 1,
+};
+
 /**
  * @cond INTERNAL_HIDDEN
  *
@@ -533,17 +538,18 @@ typedef int (*stepper_drv_get_micro_step_res_t)(const struct device *dev,
 						enum stepper_micro_step_resolution *resolution);
 
 /**
- * @brief Callback function for stepper fault events
+ * @brief Callback function for stepper driver events
  */
-typedef int (*stepper_drv_fault_cb_t)(const struct device *dev, void *user_data);
+typedef void (*stepper_drv_event_cb_t)(const struct device *dev, const enum stepper_drv_event event,
+				      void *user_data);
 
 /**
- * @brief Set the callback function to be called when a stepper driver fault occurs
+ * @brief Set the callback function to be called when a stepper_drv_event occurs
  *
- * @see stepper_drv_set_fault_callback() for details.
+ * @see stepper_drv_set_event_callback() for details.
  */
-typedef int (*stepper_drv_set_fault_callback_t)(const struct device *dev,
-						stepper_drv_fault_cb_t callback, void *user_data);
+typedef int (*stepper_drv_set_event_callback_t)(const struct device *dev,
+						stepper_drv_event_cb_t callback, void *user_data);
 
 /**
  * @brief Stepper DRV Driver API
@@ -555,7 +561,7 @@ __subsystem struct stepper_drv_driver_api {
 	stepper_drv_step_t step;
 	stepper_drv_set_micro_step_res_t set_micro_step_res;
 	stepper_drv_get_micro_step_res_t get_micro_step_res;
-	stepper_drv_set_fault_callback_t set_fault_cb;
+	stepper_drv_set_event_callback_t set_event_cb;
 };
 
 /**
@@ -708,30 +714,30 @@ static inline int z_impl_stepper_drv_get_micro_step_res(const struct device *dev
 }
 
 /**
- * @brief Set the callback function to be called when a stepper fault occurs
+ * @brief Set the callback function to be called when a stepper_drv_event occurs
  *
  * @param dev pointer to the stepper_drv driver instance
- * @param callback Callback function to be called when a stepper fault occurs
+ * @param callback Callback function to be called when a stepper_drv_event occurs
  * passing NULL will disable the callback
  * @param user_data User data to be passed to the callback function
  *
  * @retval -ENOSYS If not implemented by device driver
  * @retval 0 Success
  */
-__syscall int stepper_drv_set_fault_cb(const struct device *dev, stepper_drv_fault_cb_t callback,
+__syscall int stepper_drv_set_event_cb(const struct device *dev, stepper_drv_event_cb_t callback,
 				       void *user_data);
 
-static inline int z_impl_stepper_drv_set_fault_cb(const struct device *dev,
-						  stepper_drv_fault_cb_t callback, void *user_data)
+static inline int z_impl_stepper_drv_set_event_cb(const struct device *dev,
+						  stepper_drv_event_cb_t cb, void *user_data)
 {
 	__ASSERT_NO_MSG(dev != NULL);
 	const struct stepper_drv_driver_api *api = (const struct stepper_drv_driver_api *)dev->api;
 
-	if (api->set_fault_cb == NULL) {
+	if (api->set_event_cb == NULL) {
 		return -ENOSYS;
 	}
 
-	return api->set_fault_cb(dev, callback, user_data);
+	return api->set_event_cb(dev, cb, user_data);
 }
 
 /**

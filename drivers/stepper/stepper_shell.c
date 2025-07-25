@@ -54,10 +54,33 @@ struct stepper_control_idx_map {
 		.stepper_idx = _idx,                                                               \
 	}
 
+static void print_stepper_drv_event_cb(const struct device *dev, const enum stepper_drv_event event,
+				       void *user_data)
+{
+	const struct shell *sh = user_data;
+
+	if (!sh) {
+		return;
+	}
+
+	switch (event) {
+	case STEPPER_DRV_EVENT_STALL_DETETCTED:
+		shell_info(sh, "%s: Stall detected.", dev->name);
+		break;
+	case STEPPER_DRV_EVENT_FAULT_DETECTED:
+		shell_info(sh, "%s: Fault detected.", dev->name);
+		break;
+	default:
+		shell_info(sh, "%s: Unknown event.", dev->name);
+		break;
+	}
+}
+
 static void print_callback(const struct device *dev, const uint8_t stepper_idx,
 			   const enum stepper_event event, void *user_data)
 {
 	const struct shell *sh = user_data;
+
 	if (!sh) {
 		return;
 	}
@@ -65,9 +88,6 @@ static void print_callback(const struct device *dev, const uint8_t stepper_idx,
 	switch (event) {
 	case STEPPER_EVENT_STEPS_COMPLETED:
 		shell_info(sh, "%s: Steps completed.", dev->name);
-		break;
-	case STEPPER_EVENT_STALL_DETECTED:
-		shell_info(sh, "%s: Stall detected.", dev->name);
 		break;
 	case STEPPER_EVENT_LEFT_END_STOP_DETECTED:
 		shell_info(sh, "%s: Left limit switch pressed.", dev->name);
@@ -255,6 +275,10 @@ static int cmd_stepper_enable(const struct shell *sh, size_t argc, char **argv)
 		shell_error(sh, "Error: %d", err);
 	}
 
+	err = stepper_drv_set_event_cb(dev, print_stepper_drv_event_cb, (void *)sh);
+	if (err) {
+		shell_error(sh, "Failed to set stepper driver event callback: %d", err);
+	}
 	return err;
 }
 

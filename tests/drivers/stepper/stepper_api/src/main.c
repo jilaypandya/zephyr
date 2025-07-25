@@ -46,9 +46,6 @@ static void stepper_print_event_callback(const struct device *dev, const uint8_t
 	case STEPPER_EVENT_RIGHT_END_STOP_DETECTED:
 		k_poll_signal_raise(&stepper_signal, STEPPER_EVENT_RIGHT_END_STOP_DETECTED);
 		break;
-	case STEPPER_EVENT_STALL_DETECTED:
-		k_poll_signal_raise(&stepper_signal, STEPPER_EVENT_STALL_DETECTED);
-		break;
 	case STEPPER_EVENT_STOPPED:
 		k_poll_signal_raise(&stepper_signal, STEPPER_EVENT_STOPPED);
 		break;
