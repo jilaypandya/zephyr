@@ -37,6 +37,8 @@ struct tmc50xx_stepper_data {
 	const struct device *stepper;
 	stepper_event_callback_t callback;
 	void *event_cb_user_data;
+	stepper_drv_event_cb_t drv_event_cb;
+	void *drv_event_cb_user_data;
 };
 
 struct tmc50xx_stepper_config {
@@ -113,6 +115,17 @@ static int tmc50xx_set_event_callback(const struct device *controller, const uin
 	struct tmc50xx_stepper_data *data = tmc50xx_config->steppers[stepper_index]->data;
 	data->callback = callback;
 	data->event_cb_user_data = user_data;
+	return 0;
+}
+
+static int tmc50xx_set_stepper_drv_event_callback(const struct device *stepper,
+						  stepper_drv_event_cb_t callback, void *user_data)
+{
+	struct tmc50xx_stepper_data *data = stepper->data;
+
+	data->drv_event_cb = callback;
+	data->drv_event_cb_user_data = user_data;
+
 	return 0;
 }
 
@@ -204,6 +217,17 @@ static void execute_callback(const struct device *controller, const uint8_t step
 		return;
 	}
 	data->callback(controller, stepper_index, event, data->event_cb_user_data);
+}
+
+static void execute_stepper_drv_cb(const struct device *stepper, const enum stepper_drv_event event)
+{
+	struct tmc50xx_stepper_data *stepper_data = stepper->data;
+
+	if (stepper_data->drv_event_cb) {
+		stepper_data->drv_event_cb(stepper, event, stepper_data->drv_event_cb_user_data);
+	} else {
+		LOG_WRN_ONCE("%s: No callback registered", stepper->name);
+	}
 }
 
 #ifdef CONFIG_STEPPER_ADI_TMC50XX_RAMPSTAT_POLL_STALLGUARD_LOG
@@ -305,8 +329,8 @@ static void rampstat_work_handler(struct k_work *work)
 		case TMC5XXX_STOP_SG_EVENT:
 			LOG_DBG("RAMPSTAT %s:Stall detected", stepper_data->stepper->name);
 			stallguard_enable(stepper_config->controller, stepper_config->index, false);
-			execute_callback(stepper_config->controller, stepper_config->index,
-					 STEPPER_EVENT_STALL_DETECTED);
+			execute_stepper_drv_cb(stepper_data->stepper,
+					       STEPPER_DRV_EVENT_STALL_DETETCTED);
 			break;
 		default:
 			LOG_ERR("Illegal ramp stat bit field");
@@ -757,6 +781,7 @@ static DEVICE_API(stepper_drv, tmc50xx_stepper_drv_api) = {
 	.disable = tmc50xx_stepper_disable,
 	.set_micro_step_res = tmc50xx_stepper_set_micro_step_res,
 	.get_micro_step_res = tmc50xx_stepper_get_micro_step_res,
+	.set_event_cb = tmc50xx_set_stepper_drv_event_callback,
 };
 
 static DEVICE_API(stepper, tmc50xx_stepper_api) = {

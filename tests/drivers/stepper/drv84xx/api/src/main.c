@@ -33,9 +33,6 @@ static void drv84xx_api_print_event_callback(const struct device *dev, const uin
 	case STEPPER_EVENT_RIGHT_END_STOP_DETECTED:
 		k_poll_signal_raise(&stepper_signal, STEPPER_EVENT_RIGHT_END_STOP_DETECTED);
 		break;
-	case STEPPER_EVENT_STALL_DETECTED:
-		k_poll_signal_raise(&stepper_signal, STEPPER_EVENT_STALL_DETECTED);
-		break;
 	default:
 		break;
 	}

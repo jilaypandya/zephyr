@@ -50,7 +50,7 @@ struct drv84xx_data {
 	struct drv84xx_pin_states pin_states;
 	enum stepper_micro_step_resolution ustep_res;
 	struct gpio_callback fault_cb_data;
-	stepper_drv_fault_cb_t fault_cb;
+	stepper_drv_event_cb_t fault_cb;
 	void *fault_cb_user_data;
 };
 
@@ -255,7 +255,7 @@ static int drv84xx_disable(const struct device *dev)
 	return ret;
 }
 
-static int drv84xx_set_fault_cb(const struct device *dev, stepper_drv_fault_cb_t fault_cb,
+static int drv84xx_set_fault_cb(const struct device *dev, stepper_drv_event_cb_t fault_cb,
 				void *user_data)
 {
 	struct drv84xx_data *data = dev->data;
@@ -360,7 +360,8 @@ void fault_event(const struct device *dev, struct gpio_callback *cb, uint32_t pi
 	struct drv84xx_data *data = CONTAINER_OF(cb, struct drv84xx_data, fault_cb_data);
 
 	if (data->fault_cb != NULL) {
-		data->fault_cb(data->dev, data->fault_cb_user_data);
+		data->fault_cb(data->dev, STEPPER_DRV_EVENT_FAULT_DETECTED,
+			data->fault_cb_user_data);
 	} else {
 		LOG_WRN_ONCE("%s: Fault pin triggered but no callback is set", dev->name);
 	}
@@ -450,7 +451,7 @@ static int drv84xx_init(const struct device *dev)
 static DEVICE_API(stepper_drv, drv84xx_stepper_api) = {
 	.enable = drv84xx_enable,
 	.disable = drv84xx_disable,
-	.set_fault_cb = drv84xx_set_fault_cb,
+	.set_event_cb = drv84xx_set_fault_cb,
 	.set_micro_step_res = drv84xx_set_micro_step_res,
 	.get_micro_step_res = drv84xx_get_micro_step_res,
 	.step = step_dir_stepper_common_step,

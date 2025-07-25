@@ -68,6 +68,17 @@ static int tmc51xx_read(const struct device *dev, const uint8_t reg_addr, uint32
 	return 0;
 }
 
+static int tmc51xx_stepper_drv_set_event_cb(const struct device *stepper,
+					    stepper_drv_event_cb_t callback, void *user_data)
+{
+	struct tmc51xx_stepper_data *data = stepper->data;
+
+	data->drv_event_cb = callback;
+	data->drv_event_cb_user_data = user_data;
+
+	return 0;
+}
+
 static int tmc51xx_stepper_set_event_callback(const struct device *controller,
 					      const uint8_t stepper_idx,
 					      stepper_event_callback_t callback, void *user_data)
@@ -213,6 +224,17 @@ static void stepper_trigger_callback(const struct device *dev, const enum steppe
 	data->callback(dev, 0, event, data->event_cb_user_data);
 }
 
+static void trigger_stepper_drv_cb(const struct device *stepper, const enum stepper_drv_event event)
+{
+	struct tmc51xx_stepper_data *stepper_data = stepper->data;
+
+	if (stepper_data->drv_event_cb) {
+		stepper_data->drv_event_cb(stepper, event, stepper_data->drv_event_cb_user_data);
+	} else {
+		LOG_WRN_ONCE("%s: No callback registered", stepper->name);
+	}
+}
+
 #ifdef CONFIG_STEPPER_ADI_TMC51XX_RAMPSTAT_POLL_STALLGUARD_LOG
 
 static void log_stallguard(const struct device *dev, const uint32_t drv_status)
@@ -309,7 +331,7 @@ static void rampstat_work_handler(struct k_work *work)
 		case TMC5XXX_STOP_SG_EVENT:
 			LOG_DBG("RAMPSTAT %s:Stall detected", dev->name);
 			stallguard_enable(dev, false);
-			stepper_trigger_callback(dev, STEPPER_EVENT_STALL_DETECTED);
+			trigger_stepper_drv_cb(dev, STEPPER_DRV_EVENT_STALL_DETETCTED);
 			break;
 		default:
 			LOG_ERR("Illegal ramp stat bit field 0x%x", ramp_stat_values);
@@ -845,6 +867,7 @@ static DEVICE_API(stepper_drv, tmc51xx_drv_api) = {
 	.disable = tmc51xx_stepper_disable,
 	.set_micro_step_res = tmc51xx_stepper_set_micro_step_res,
 	.get_micro_step_res = tmc51xx_stepper_get_micro_step_res,
+	.set_event_cb = tmc51xx_stepper_drv_set_event_cb,
 };
 
 static DEVICE_API(stepper, tmc51xx_api) = {

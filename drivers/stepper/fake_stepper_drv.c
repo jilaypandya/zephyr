@@ -28,6 +28,9 @@ DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_set_micro_step_res, const struct device
 DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_get_micro_step_res, const struct device *,
 		       enum stepper_micro_step_resolution *);
 
+DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_drv_set_event_callback, const struct device *,
+		       stepper_drv_event_cb_t, void *);
+
 static int fake_stepper_set_micro_step_res_delegate(const struct device *dev,
 						    const enum stepper_micro_step_resolution res)
 {
@@ -79,6 +82,7 @@ static DEVICE_API(stepper_drv, fake_stepper_driver_api) = {
 	.disable = fake_stepper_disable,
 	.set_micro_step_res = fake_stepper_set_micro_step_res,
 	.get_micro_step_res = fake_stepper_get_micro_step_res,
+	.set_event_cb = fake_stepper_drv_set_event_callback,
 };
 
 #define FAKE_STEPPER_INIT(inst)                                                                    \

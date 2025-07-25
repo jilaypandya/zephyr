@@ -61,6 +61,8 @@ struct tmc51xx_stepper_data {
 	const struct device *stepper;
 	stepper_event_callback_t callback;
 	void *event_cb_user_data;
+	stepper_drv_event_cb_t drv_event_cb;
+	void *drv_event_cb_user_data;
 };
 
 #if TMC51XX_BUS_SPI
