@@ -13,7 +13,7 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(h_bridge_stepper, CONFIG_STEPPER_LOG_LEVEL);
 
-#define MAX_MICRO_STEP_RES STEPPER_MICRO_STEP_2
+#define MAX_MICRO_STEP_RES STEPPER_DRV_MICRO_STEP_2
 #define NUM_CONTROL_PINS   4
 
 static const uint8_t
@@ -88,15 +88,15 @@ static void update_coil_charge(const struct device *dev)
 }
 
 static int h_bridge_stepper_set_micro_step_res(const struct device *dev,
-					       enum stepper_micro_step_resolution micro_step_res)
+					enum stepper_drv_micro_step_resolution micro_step_res)
 {
 	struct h_bridge_stepper_data *data = dev->data;
 	int err = 0;
 
 	K_SPINLOCK(&data->lock) {
 		switch (micro_step_res) {
-		case STEPPER_MICRO_STEP_1:
-		case STEPPER_MICRO_STEP_2:
+		case STEPPER_DRV_MICRO_STEP_1:
+		case STEPPER_DRV_MICRO_STEP_2:
 			data->step_gap = MAX_MICRO_STEP_RES >> (micro_step_res - 1);
 			break;
 		default:
@@ -108,7 +108,7 @@ static int h_bridge_stepper_set_micro_step_res(const struct device *dev,
 }
 
 static int h_bridge_stepper_get_micro_step_res(const struct device *dev,
-					       enum stepper_micro_step_resolution *micro_step_res)
+					enum stepper_drv_micro_step_resolution *micro_step_res)
 {
 	struct h_bridge_stepper_data *data = dev->data;
 	*micro_step_res = MAX_MICRO_STEP_RES >> (data->step_gap - 1);
@@ -230,7 +230,7 @@ static DEVICE_API(stepper_drv, h_bridge_stepper_api) = {
 	static struct h_bridge_stepper_data h_bridge_stepper_data_##inst = {                       \
 		.step_gap = MAX_MICRO_STEP_RES >> (DT_INST_PROP(inst, micro_step_res) - 1),        \
 	};                                                                                         \
-	BUILD_ASSERT(DT_INST_PROP(inst, micro_step_res) <= STEPPER_MICRO_STEP_2,                   \
+	BUILD_ASSERT(DT_INST_PROP(inst, micro_step_res) <= STEPPER_DRV_MICRO_STEP_2,               \
 		     "h_bridge stepper driver supports up to 2 micro steps");                      \
 	DEVICE_DT_INST_DEFINE(inst, h_bridge_stepper_init, NULL, &h_bridge_stepper_data_##inst,    \
 			      &h_bridge_stepper_config_##inst, POST_KERNEL,                        \

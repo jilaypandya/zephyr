@@ -30,43 +30,6 @@ extern "C" {
 #endif
 
 /**
- * @brief Stepper Motor micro-step resolution options
- */
-enum stepper_micro_step_resolution {
-	/** Full step resolution */
-	STEPPER_MICRO_STEP_1 = 1,
-	/** 2 micro-steps per full step */
-	STEPPER_MICRO_STEP_2 = 2,
-	/** 4 micro-steps per full step */
-	STEPPER_MICRO_STEP_4 = 4,
-	/** 8 micro-steps per full step */
-	STEPPER_MICRO_STEP_8 = 8,
-	/** 16 micro-steps per full step */
-	STEPPER_MICRO_STEP_16 = 16,
-	/** 32 micro-steps per full step */
-	STEPPER_MICRO_STEP_32 = 32,
-	/** 64 micro-steps per full step */
-	STEPPER_MICRO_STEP_64 = 64,
-	/** 128 micro-steps per full step */
-	STEPPER_MICRO_STEP_128 = 128,
-	/** 256 micro-steps per full step */
-	STEPPER_MICRO_STEP_256 = 256,
-};
-
-/**
- * @brief Macro to calculate the index of the microstep resolution
- * @param res Microstep resolution
- */
-#define MICRO_STEP_RES_INDEX(res) LOG2(res)
-
-#define VALID_MICRO_STEP_RES(res)                                                                  \
-	((res) == STEPPER_MICRO_STEP_1 || (res) == STEPPER_MICRO_STEP_2 ||                         \
-	 (res) == STEPPER_MICRO_STEP_4 || (res) == STEPPER_MICRO_STEP_8 ||                         \
-	 (res) == STEPPER_MICRO_STEP_16 || (res) == STEPPER_MICRO_STEP_32 ||                       \
-	 (res) == STEPPER_MICRO_STEP_64 || (res) == STEPPER_MICRO_STEP_128 ||                      \
-	 (res) == STEPPER_MICRO_STEP_256)
-
-/**
  * @brief Check if the stepper index is valid
  * @param stepper_idx Stepper index to check
  * @param max_num_stepper Maximum number of steppers supported by the device
@@ -478,6 +441,43 @@ static inline int z_impl_stepper_is_moving(const struct device *dev, const uint8
  * @{
  */
 
+/**
+ * @brief Stepper Motor micro-step resolution options
+ */
+enum stepper_drv_micro_step_resolution {
+	/** Full step resolution */
+	STEPPER_DRV_MICRO_STEP_1 = 1,
+	/** 2 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_2 = 2,
+	/** 4 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_4 = 4,
+	/** 8 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_8 = 8,
+	/** 16 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_16 = 16,
+	/** 32 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_32 = 32,
+	/** 64 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_64 = 64,
+	/** 128 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_128 = 128,
+	/** 256 micro-steps per full step */
+	STEPPER_DRV_MICRO_STEP_256 = 256,
+};
+
+/**
+ * @brief Macro to calculate the index of the microstep resolution
+ * @param res Microstep resolution
+ */
+#define MICRO_STEP_RES_INDEX(res) LOG2(res)
+
+#define VALID_MICRO_STEP_RES(res)                                                                  \
+	((res) == STEPPER_DRV_MICRO_STEP_1 || (res) == STEPPER_DRV_MICRO_STEP_2 ||                 \
+	 (res) == STEPPER_DRV_MICRO_STEP_4 || (res) == STEPPER_DRV_MICRO_STEP_8 ||                 \
+	 (res) == STEPPER_DRV_MICRO_STEP_16 || (res) == STEPPER_DRV_MICRO_STEP_32 ||               \
+	 (res) == STEPPER_DRV_MICRO_STEP_64 || (res) == STEPPER_DRV_MICRO_STEP_128 ||              \
+	 (res) == STEPPER_DRV_MICRO_STEP_256)
+
 enum stepper_drv_event {
 	/** Stepper driver stall detected */
 	STEPPER_DRV_EVENT_STALL_DETETCTED = 0,
@@ -527,7 +527,7 @@ typedef int (*stepper_drv_step_t)(const struct device *dev);
  * @see stepper_drv_set_micro_step_res() for details.
  */
 typedef int (*stepper_drv_set_micro_step_res_t)(
-	const struct device *dev, const enum stepper_micro_step_resolution resolution);
+	const struct device *dev, const enum stepper_drv_micro_step_resolution resolution);
 
 /**
  * @brief Get the stepper micro-step resolution
@@ -535,13 +535,13 @@ typedef int (*stepper_drv_set_micro_step_res_t)(
  * @see stepper_drv_get_micro_step_res() for details.
  */
 typedef int (*stepper_drv_get_micro_step_res_t)(const struct device *dev,
-						enum stepper_micro_step_resolution *resolution);
+						enum stepper_drv_micro_step_resolution *resolution);
 
 /**
  * @brief Callback function for stepper driver events
  */
 typedef void (*stepper_drv_event_cb_t)(const struct device *dev, const enum stepper_drv_event event,
-				      void *user_data);
+				       void *user_data);
 
 /**
  * @brief Set the callback function to be called when a stepper_drv_event occurs
@@ -672,10 +672,10 @@ static inline int z_impl_stepper_drv_set_direction(const struct device *dev,
  * @retval 0 Success
  */
 __syscall int stepper_drv_set_micro_step_res(const struct device *dev,
-					     enum stepper_micro_step_resolution res);
+					     enum stepper_drv_micro_step_resolution res);
 
 static inline int z_impl_stepper_drv_set_micro_step_res(const struct device *dev,
-							enum stepper_micro_step_resolution res)
+							enum stepper_drv_micro_step_resolution res)
 {
 	__ASSERT_NO_MSG(dev != NULL);
 	const struct stepper_drv_driver_api *api = (const struct stepper_drv_driver_api *)dev->api;
@@ -701,10 +701,10 @@ static inline int z_impl_stepper_drv_set_micro_step_res(const struct device *dev
  * @retval 0 Success
  */
 __syscall int stepper_drv_get_micro_step_res(const struct device *dev,
-					     enum stepper_micro_step_resolution *res);
+					     enum stepper_drv_micro_step_resolution *res);
 
 static inline int z_impl_stepper_drv_get_micro_step_res(const struct device *dev,
-							enum stepper_micro_step_resolution *res)
+							enum stepper_drv_micro_step_resolution *res)
 {
 	__ASSERT_NO_MSG(dev != NULL);
 	__ASSERT_NO_MSG(res != NULL);

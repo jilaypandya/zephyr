@@ -15,11 +15,11 @@ struct tmc22xx_config {
 	struct step_dir_stepper_common_config common;
 	const struct gpio_dt_spec enable_pin;
 	const struct gpio_dt_spec *msx_pins;
-	enum stepper_micro_step_resolution *msx_resolutions;
+	enum stepper_drv_micro_step_resolution *msx_resolutions;
 };
 
 struct tmc22xx_data {
-	enum stepper_micro_step_resolution resolution;
+	enum stepper_drv_micro_step_resolution resolution;
 };
 
 STEP_DIR_STEPPER_STRUCT_CHECK(struct tmc22xx_config);
@@ -41,7 +41,7 @@ static int tmc22xx_stepper_disable(const struct device *dev)
 }
 
 static int tmc22xx_stepper_set_micro_step_res(const struct device *dev,
-					      enum stepper_micro_step_resolution micro_step_res)
+					      enum stepper_drv_micro_step_resolution micro_step_res)
 {
 	struct tmc22xx_data *data = dev->data;
 	const struct tmc22xx_config *config = dev->config;
@@ -78,7 +78,7 @@ static int tmc22xx_stepper_set_micro_step_res(const struct device *dev,
 }
 
 static int tmc22xx_stepper_get_micro_step_res(const struct device *dev,
-					      enum stepper_micro_step_resolution *micro_step_res)
+					enum stepper_drv_micro_step_resolution *micro_step_res)
 {
 	struct tmc22xx_data *data = dev->data;
 
@@ -182,11 +182,11 @@ static DEVICE_API(stepper_drv, tmc22xx_stepper_api) = {
 			      &tmc22xx_stepper_api);
 
 #define DT_DRV_COMPAT adi_tmc2209
-static enum stepper_micro_step_resolution tmc2209_msx_resolutions[MSX_PIN_STATE_COUNT] = {
-	STEPPER_MICRO_STEP_8,
-	STEPPER_MICRO_STEP_32,
-	STEPPER_MICRO_STEP_64,
-	STEPPER_MICRO_STEP_16,
+static enum stepper_drv_micro_step_resolution tmc2209_msx_resolutions[MSX_PIN_STATE_COUNT] = {
+	STEPPER_DRV_MICRO_STEP_8,
+	STEPPER_DRV_MICRO_STEP_32,
+	STEPPER_DRV_MICRO_STEP_64,
+	STEPPER_DRV_MICRO_STEP_16,
 };
 DT_INST_FOREACH_STATUS_OKAY_VARGS(TMC22XX_STEPPER_DEFINE, tmc2209_msx_resolutions)
 #undef DT_DRV_COMPAT

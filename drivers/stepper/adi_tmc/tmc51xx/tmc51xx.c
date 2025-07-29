@@ -438,7 +438,7 @@ int tmc51xx_stepper_set_max_velocity(const struct device *dev, uint32_t velocity
 }
 
 static int tmc51xx_stepper_set_micro_step_res(const struct device *dev,
-					      enum stepper_micro_step_resolution res)
+					      enum stepper_drv_micro_step_resolution res)
 {
 	const struct tmc51xx_stepper_config *config = dev->config;
 	uint32_t reg_value;
@@ -450,7 +450,7 @@ static int tmc51xx_stepper_set_micro_step_res(const struct device *dev,
 	}
 
 	reg_value &= ~TMC5XXX_CHOPCONF_MRES_MASK;
-	reg_value |= ((MICRO_STEP_RES_INDEX(STEPPER_MICRO_STEP_256) - LOG2(res))
+	reg_value |= ((MICRO_STEP_RES_INDEX(STEPPER_DRV_MICRO_STEP_256) - LOG2(res))
 		      << TMC5XXX_CHOPCONF_MRES_SHIFT);
 
 	err = tmc51xx_write(config->controller, TMC51XX_CHOPCONF, reg_value);
@@ -464,7 +464,7 @@ static int tmc51xx_stepper_set_micro_step_res(const struct device *dev,
 }
 
 static int tmc51xx_stepper_get_micro_step_res(const struct device *dev,
-					      enum stepper_micro_step_resolution *res)
+					      enum stepper_drv_micro_step_resolution *res)
 {
 	const struct tmc51xx_stepper_config *config = dev->config;
 	uint32_t reg_value;
@@ -476,7 +476,7 @@ static int tmc51xx_stepper_get_micro_step_res(const struct device *dev,
 	}
 	reg_value &= TMC5XXX_CHOPCONF_MRES_MASK;
 	reg_value >>= TMC5XXX_CHOPCONF_MRES_SHIFT;
-	*res = (1 << (MICRO_STEP_RES_INDEX(STEPPER_MICRO_STEP_256) - reg_value));
+	*res = (1 << (MICRO_STEP_RES_INDEX(STEPPER_DRV_MICRO_STEP_256) - reg_value));
 	LOG_DBG("Stepper motor controller %s get micro step resolution: %d", dev->name, *res);
 	return 0;
 }

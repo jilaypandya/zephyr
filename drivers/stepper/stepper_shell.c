@@ -21,7 +21,7 @@ enum {
 
 struct stepper_microstep_map {
 	const char *name;
-	enum stepper_micro_step_resolution microstep;
+	enum stepper_drv_micro_step_resolution microstep;
 };
 
 struct stepper_direction_map {
@@ -126,15 +126,15 @@ static const struct stepper_control_idx_map stepper_control_idx_map[] = {
 };
 
 static const struct stepper_microstep_map stepper_microstep_map[] = {
-	STEPPER_MICROSTEP_MAP("1", STEPPER_MICRO_STEP_1),
-	STEPPER_MICROSTEP_MAP("2", STEPPER_MICRO_STEP_2),
-	STEPPER_MICROSTEP_MAP("4", STEPPER_MICRO_STEP_4),
-	STEPPER_MICROSTEP_MAP("8", STEPPER_MICRO_STEP_8),
-	STEPPER_MICROSTEP_MAP("16", STEPPER_MICRO_STEP_16),
-	STEPPER_MICROSTEP_MAP("32", STEPPER_MICRO_STEP_32),
-	STEPPER_MICROSTEP_MAP("64", STEPPER_MICRO_STEP_64),
-	STEPPER_MICROSTEP_MAP("128", STEPPER_MICRO_STEP_128),
-	STEPPER_MICROSTEP_MAP("256", STEPPER_MICRO_STEP_256),
+	STEPPER_MICROSTEP_MAP("1", STEPPER_DRV_MICRO_STEP_1),
+	STEPPER_MICROSTEP_MAP("2", STEPPER_DRV_MICRO_STEP_2),
+	STEPPER_MICROSTEP_MAP("4", STEPPER_DRV_MICRO_STEP_4),
+	STEPPER_MICROSTEP_MAP("8", STEPPER_DRV_MICRO_STEP_8),
+	STEPPER_MICROSTEP_MAP("16", STEPPER_DRV_MICRO_STEP_16),
+	STEPPER_MICROSTEP_MAP("32", STEPPER_DRV_MICRO_STEP_32),
+	STEPPER_MICROSTEP_MAP("64", STEPPER_DRV_MICRO_STEP_64),
+	STEPPER_MICROSTEP_MAP("128", STEPPER_DRV_MICRO_STEP_128),
+	STEPPER_MICROSTEP_MAP("256", STEPPER_DRV_MICRO_STEP_256),
 };
 
 static void cmd_stepper_direction(size_t idx, struct shell_static_entry *entry)
@@ -411,7 +411,7 @@ static int cmd_stepper_set_microstep_interval(const struct shell *sh, size_t arg
 static int cmd_stepper_set_micro_step_res(const struct shell *sh, size_t argc, char **argv)
 {
 	const struct device *dev;
-	enum stepper_micro_step_resolution resolution;
+	enum stepper_drv_micro_step_resolution resolution;
 	int err = -EINVAL;
 
 	for (int i = 0; i < ARRAY_SIZE(stepper_microstep_map); i++) {
@@ -445,7 +445,7 @@ static int cmd_stepper_get_micro_step_res(const struct shell *sh, size_t argc, c
 {
 	const struct device *dev;
 	int err;
-	enum stepper_micro_step_resolution micro_step_res;
+	enum stepper_drv_micro_step_resolution micro_step_res;
 
 	err = parse_device_arg(sh, argv, &dev);
 	if (err < 0) {
@@ -647,7 +647,7 @@ static int cmd_stepper_info(const struct shell *sh, size_t argc, char **argv)
 {
 	const struct device *dev;
 	int err;
-	enum stepper_micro_step_resolution micro_step_res;
+	enum stepper_drv_micro_step_resolution micro_step_res;
 
 	err = parse_device_arg(sh, argv, &dev);
 	if (err < 0) {

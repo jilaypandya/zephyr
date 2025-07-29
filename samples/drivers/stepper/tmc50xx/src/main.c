@@ -44,7 +44,7 @@ int main(void)
 	stepper_set_event_callback(stepper_controller, stepper_index, stepper_callback, NULL);
 	stepper_drv_enable(stepper);
 
-	enum stepper_micro_step_resolution micro_step_res;
+	enum stepper_drv_micro_step_resolution micro_step_res;
 
 	stepper_drv_get_micro_step_res(stepper, &micro_step_res);
 	printf("Microstep resolution is %d\n", micro_step_res);

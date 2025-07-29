@@ -15,7 +15,7 @@
 #define DT_DRV_COMPAT zephyr_fake_stepper
 
 struct fake_stepper_data {
-	enum stepper_micro_step_resolution micro_step_res;
+	enum stepper_drv_micro_step_resolution micro_step_res;
 };
 
 DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_enable, const struct device *);
@@ -23,16 +23,16 @@ DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_enable, const struct device *);
 DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_disable, const struct device *);
 
 DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_set_micro_step_res, const struct device *,
-		       enum stepper_micro_step_resolution);
+		       enum stepper_drv_micro_step_resolution);
 
 DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_get_micro_step_res, const struct device *,
-		       enum stepper_micro_step_resolution *);
+		       enum stepper_drv_micro_step_resolution *);
 
 DEFINE_FAKE_VALUE_FUNC(int, fake_stepper_drv_set_event_callback, const struct device *,
 		       stepper_drv_event_cb_t, void *);
 
 static int fake_stepper_set_micro_step_res_delegate(const struct device *dev,
-						    const enum stepper_micro_step_resolution res)
+						const enum stepper_drv_micro_step_resolution res)
 {
 	struct fake_stepper_data *data = dev->data;
 
@@ -42,7 +42,7 @@ static int fake_stepper_set_micro_step_res_delegate(const struct device *dev,
 }
 
 static int fake_stepper_get_micro_step_res_delegate(const struct device *dev,
-						    enum stepper_micro_step_resolution *res)
+						    enum stepper_drv_micro_step_resolution *res)
 {
 	struct fake_stepper_data *data = dev->data;
 
