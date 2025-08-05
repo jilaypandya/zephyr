@@ -16,6 +16,7 @@ adi_tmc2209: adi_tmc2209 {
 	en-gpios = <&test_gpio 0 0>;
 	step-gpios = <&test_gpio 0 0>;
 	dir-gpios = <&test_gpio 0 0>;
+	dual-edge-step;
 };
 
 allegro_a4979: allegro_a4979 {

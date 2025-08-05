@@ -17,14 +17,6 @@ int step_dir_stepper_common_step(const struct device *dev)
 		return ret;
 	}
 
-	if (!config->dual_edge) {
-		ret = gpio_pin_toggle_dt(&config->step_pin);
-		if (ret < 0) {
-			LOG_ERR("Failed to toggle step pin: %d", ret);
-			return ret;
-		}
-	}
-
 	return 0;
 }
 

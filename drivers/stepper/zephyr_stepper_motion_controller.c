@@ -21,6 +21,7 @@ struct stepper_motion_control_config {
 	const struct device *stepper;
 	const struct timing_source_config timing_config;
 	const struct stepper_timing_source_api *timing_source;
+	const uint8_t pulse_per_step;
 };
 
 struct stepper_motion_control_data {
@@ -33,6 +34,7 @@ struct stepper_motion_control_data {
 	stepper_event_callback_t callback;
 	void *event_cb_user_data;
 	struct timing_source_data timing_data;
+	uint8_t actual_pulse_per_step;
 #ifdef CONFIG_ZEPHYR_STEPPER_MOTION_CONTROL_GENERATE_ISR_SAFE_EVENTS
 	struct k_work event_callback_work;
 	struct k_msgq event_msgq;
@@ -239,7 +241,7 @@ static int z_stepper_motion_control_set_step_interval(const struct device *dev,
 	K_SPINLOCK(&data->lock) {
 		data->timing_data.microstep_interval_ns = microstep_interval_ns;
 		config->timing_source->update(&config->timing_config, &data->timing_data,
-					      microstep_interval_ns);
+					      microstep_interval_ns * config->pulse_per_step);
 	}
 	LOG_DBG("Setting Motor step interval to %llu", microstep_interval_ns);
 	return 0;
@@ -286,8 +288,14 @@ static void position_mode_task(const struct device *dev)
 	struct stepper_motion_control_data *data = dev->data;
 
 	stepper_drv_step(config->stepper);
-	update_remaining_steps(dev);
-	update_actual_position(dev);
+	if (data->actual_pulse_per_step == config->pulse_per_step) {
+		update_remaining_steps(dev);
+		update_actual_position(dev);
+		data->actual_pulse_per_step = 1;
+	} else {
+		data->actual_pulse_per_step++;
+	}
+
 
 	if (config->timing_source->needs_reschedule(dev) && data->step_count != 0) {
 		config->timing_source->start(&config->timing_config, &data->timing_data);
@@ -303,7 +311,12 @@ static void velocity_mode_task(const struct device *dev)
 	struct stepper_motion_control_data *data = dev->data;
 
 	stepper_drv_step(config->stepper);
-	update_actual_position(dev);
+	if (data->actual_pulse_per_step == config->pulse_per_step) {
+		update_actual_position(dev);
+		data->actual_pulse_per_step = 1;
+	} else {
+		data->actual_pulse_per_step++;
+	}
 
 	if (config->timing_source->needs_reschedule(dev)) {
 		(void)config->timing_source->start(&config->timing_config, &data->timing_data);
@@ -353,7 +366,7 @@ static int stepper_motion_control_init(const struct device *dev)
 	data->dev = dev;
 
 	__ASSERT_NO_MSG(config->timing_source->init != NULL);
-
+	LOG_DBG("Pulse per step: %d", config->pulse_per_step);
 	ret = config->timing_source->init(&config->timing_config, &data->timing_data);
 	if (ret < 0) {
 		LOG_ERR("Failed to initialize timing source: %d", ret);
@@ -390,6 +403,7 @@ static DEVICE_API(stepper, zephyr_stepper_motion_control_api) = {
 			DEVICE_DT_GET_OR_NULL(DT_PHANDLE(DT_DRV_INST(inst), counter)),             \
 		.timing_source = COND_CODE_1(DT_INST_NODE_HAS_PROP(inst, counter),                 \
 			(&step_counter_timing_source_api), (&step_work_timing_source_api)),        \
+		.pulse_per_step = COND_CODE_1(DT_PROP(DT_PHANDLE(DT_DRV_INST(inst), stepper), dual_edge_step),(2), (1)),     \
 	};                                                                                         \
 	struct stepper_motion_control_data stepper_motion_control_data_##inst = {                  \
 		.timing_data.motion_control_dev = DEVICE_DT_GET(DT_DRV_INST(inst)),                \

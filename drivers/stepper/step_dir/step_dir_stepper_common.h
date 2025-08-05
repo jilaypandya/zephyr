@@ -25,7 +25,6 @@
 struct step_dir_stepper_common_config {
 	const struct gpio_dt_spec step_pin;
 	const struct gpio_dt_spec dir_pin;
-	bool dual_edge;
 	bool invert_direction;
 };
 
@@ -40,7 +39,6 @@ struct step_dir_stepper_common_config {
 	{                                                                                          \
 		.step_pin = GPIO_DT_SPEC_GET(node_id, step_gpios),                                 \
 		.dir_pin = GPIO_DT_SPEC_GET(node_id, dir_gpios),                                   \
-		.dual_edge = DT_PROP_OR(node_id, dual_edge_step, false),                           \
 		.invert_direction = DT_PROP(node_id, invert_direction),                            \
 	}
 
