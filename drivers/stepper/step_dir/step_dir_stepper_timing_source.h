@@ -8,6 +8,13 @@
 
 #include <zephyr/device.h>
 
+enum step_dir_timing_source_event {
+	STEP_DIR_TIMING_SOURCE_EVENT_START,
+	STEP_DIR_TIMING_SOURCE_EVENT_STOP,
+	STEP_DIR_TIMING_SOURCE_PULSE_WIDTH_COMPLETED,
+	STEP_DIR_TIMING_SOURCE_LOW_LEVEL_WIDTH_COMPLETED,
+};
+
 /**
  * @brief Initialize the stepper timing source.
  *
@@ -59,6 +66,13 @@ typedef int (*stepper_timing_source_stop)(const struct device *dev);
  */
 typedef bool (*stepper_timing_source_is_running)(const struct device *dev);
 
+typedef int (*stepper_timing_source_event_callback_t)(const struct device *dev,
+						      enum step_dir_timing_source_event event,
+						      void *user_data);
+
+typedef int (*stepper_timing_source_set_event_callback_t)(
+	const struct device *dev, stepper_timing_source_event_callback_t callback, void *user_data);
+
 /**
  * @brief Stepper timing source API.
  */
@@ -69,6 +83,7 @@ struct stepper_timing_source_api {
 	stepper_timing_sources_requires_reschedule needs_reschedule;
 	stepper_timing_source_stop stop;
 	stepper_timing_source_is_running is_running;
+	stepper_timing_source_set_event_callback_t set_event_callback;
 };
 
 extern const struct stepper_timing_source_api step_work_timing_source_api;

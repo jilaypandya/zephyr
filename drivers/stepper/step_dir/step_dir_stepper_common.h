@@ -30,9 +30,12 @@ struct step_dir_stepper_common_config {
 	const struct gpio_dt_spec step_pin;
 	const struct gpio_dt_spec dir_pin;
 	bool dual_edge;
+	bool invert_direction;
+	/* timing source configs */
 	const struct stepper_timing_source_api *timing_source;
 	const struct device *counter;
-	bool invert_direction;
+	const uint64_t min_pulse_width_ns;
+	const uint64_t min_low_level_width_ns;
 };
 
 /**
@@ -47,11 +50,13 @@ struct step_dir_stepper_common_config {
 		.step_pin = GPIO_DT_SPEC_GET(node_id, step_gpios),                                 \
 		.dir_pin = GPIO_DT_SPEC_GET(node_id, dir_gpios),                                   \
 		.dual_edge = DT_PROP_OR(node_id, dual_edge_step, false),                           \
-		.counter = DEVICE_DT_GET_OR_NULL(DT_PHANDLE(node_id, counter)),                    \
 		.invert_direction = DT_PROP(node_id, invert_direction),                            \
+		.counter = DEVICE_DT_GET_OR_NULL(DT_PHANDLE(node_id, counter)),                    \
 		.timing_source = COND_CODE_1(DT_NODE_HAS_PROP(node_id, counter),                   \
 						(&step_counter_timing_source_api),                 \
 						(&step_work_timing_source_api)),                   \
+		.pulse_width_ns = DT_PROP_OR(node_id, pulse_width_ns, 0),                          \
+		.low_level_width_ns = DT_PROP_OR(node_id, low_level_width_ns, 0),                  \
 	}
 
 /**
@@ -82,6 +87,10 @@ struct step_dir_stepper_common_data {
 #ifdef CONFIG_STEP_DIR_STEPPER_COUNTER_TIMING
 	struct counter_top_cfg counter_top_cfg;
 	bool counter_running;
+	uint64_t low_level_width;
+	enum step_dir_timing_source_event next_timing_event;
+	stepper_timing_source_event_callback_t timing_event_cb;
+	void *timing_event_cb_user_data;
 #endif /* CONFIG_STEP_DIR_STEPPER_COUNTER_TIMING */
 
 #ifdef CONFIG_STEPPER_STEP_DIR_GENERATE_ISR_SAFE_EVENTS

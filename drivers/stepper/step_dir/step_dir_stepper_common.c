@@ -53,6 +53,55 @@ static inline int step_dir_stepper_perform_step(const struct device *dev)
 	return 0;
 }
 
+static void count_step(const struct device *dev)
+{
+	struct step_dir_stepper_common_data *data = dev->data;
+	if (data->direction == STEPPER_DIRECTION_POSITIVE) {
+		data->actual_position++;
+	} else {
+		data->actual_position--;
+	}
+}
+
+static inline int step_dir_timing_source_callback(const struct device *dev,
+					     enum step_dir_timing_source_event event,
+					     void *user_data)
+{
+	const struct step_dir_stepper_common_config *config = dev->config;
+	struct step_dir_stepper_common_data *data = dev->data;
+	ARG_UNUSED(user_data);
+	int ret;
+
+	switch (event)
+	{
+	case STEP_DIR_TIMING_SOURCE_EVENT_START:
+		ret = gpio_pin_set_dt(&config->step_pin, 1);
+		if (config->dual_edge) {
+			count_step(dev);
+		}
+		break;
+	case STEP_DIR_TIMING_SOURCE_EVENT_STOP:
+		if (!config->dual_edge) {
+			ret = gpio_pin_set_dt(&config->step_pin, 0);
+		}
+		break;
+	case STEP_DIR_TIMING_SOURCE_PULSE_WIDTH_COMPLETED:
+		count_step(dev);
+		ret = gpio_pin_set_dt(&config->step_pin, 0);
+		break;
+	case STEP_DIR_TIMING_SOURCE_LOW_LEVEL_WIDTH_COMPLETED:
+		ret = gpio_pin_set_dt(&config->step_pin, 1);
+		if (config->dual_edge) {
+			count_step(dev);
+		}
+		break;
+	default:
+		break;
+	}
+
+	return ret;
+}
+
 void stepper_trigger_callback(const struct device *dev, enum stepper_event event)
 {
 	struct step_dir_stepper_common_data *data = dev->data;
