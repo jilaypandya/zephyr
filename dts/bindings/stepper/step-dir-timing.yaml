@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Jilay Sandeep Pandya
+# SPDX-License-Identifier: Apache-2.0
+
+description: Step/Dir Control Signal Timing
+
+properties:
+  high-level-width-ns:
+    type: int
+    description: |
+      Pulse width in nanoseconds for the step signal.
+      This is the minimum duration for which the step signal is asserted high.
+
+  low-level-width-ns:
+    type: int
+    description: |
+      Low level width in nanoseconds for the step signal.
+      This is the minimum duration for which the step signal is asserted low.
+
+  step-period-ns:
+    type: int
+    description: |
+      Total period in nanoseconds for the step signal.
+
+  dir-to-step-setup-time-ns:
+    type: int
+    description: |
+      Setup time in nanoseconds from the direction signal change to the step signal.
+      This is the minimum time that the direction signal must be stable before the step signal is asserted.
+
+  dir-after-step-hold-time-ns:
+    type: int
+    description: |
+      Hold time in nanoseconds after the step signal for the direction signal.
+      This is the minimum time that the direction signal must remain stable after the step signal is deasserted.
