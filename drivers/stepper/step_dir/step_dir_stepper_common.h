@@ -18,6 +18,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/stepper.h>
 #include <zephyr/drivers/counter.h>
+#include <zephyr/sys/clock.h>
 
 #include "step_dir_stepper_timing_source.h"
 
@@ -61,12 +62,20 @@ struct step_dir_stepper_common_config {
 #define STEP_DIR_STEPPER_DT_INST_COMMON_CONFIG_INIT(inst)                                          \
 	STEP_DIR_STEPPER_DT_COMMON_CONFIG_INIT(DT_DRV_INST(inst))
 
+struct step_dir_interface_timing_data {
+	uint16_t t_sh_ns;
+	uint16_t t_sl_ns;
+	uint16_t t_dsu_ns;
+	uint16_t t_dsh_ns;
+};
+
 /**
  * @brief Common step direction stepper data.
  *
  * This structure **must** be placed first in the driver's data structure.
  */
 struct step_dir_stepper_common_data {
+	struct step_dir_interface_timing_data timing_data;
 	const struct device *dev;
 	struct k_spinlock lock;
 	enum stepper_direction direction;
@@ -78,7 +87,7 @@ struct step_dir_stepper_common_data {
 	void *event_cb_user_data;
 
 	struct k_work_delayable stepper_dwork;
-
+	k_timepoint_t t_dsu_timepoint;
 #ifdef CONFIG_STEP_DIR_STEPPER_COUNTER_TIMING
 	struct counter_top_cfg counter_top_cfg;
 	bool counter_running;
@@ -231,6 +240,13 @@ void stepper_handle_timing_signal(const struct device *dev);
  * @param event The stepper_event to rigger the callback for.
  */
 void stepper_trigger_callback(const struct device *dev, enum stepper_event event);
+
+static inline void step_dir_reset_dir_pin_timepoint(const struct device *dev)
+{
+	struct step_dir_stepper_common_data *data = dev->data;
+
+	data->t_dsu_timepoint = sys_timepoint_calc(K_NSEC(data->timing_data.t_dsu_ns));
+}
 
 /** @} */
 

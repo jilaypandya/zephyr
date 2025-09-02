@@ -123,7 +123,6 @@ static void update_remaining_steps(struct step_dir_stepper_common_data *data)
 static void update_direction_from_step_count(const struct device *dev)
 {
 	struct step_dir_stepper_common_data *data = dev->data;
-
 	if (atomic_get(&data->step_count) > 0) {
 		data->direction = STEPPER_DIRECTION_POSITIVE;
 	} else if (atomic_get(&data->step_count) < 0) {
@@ -242,13 +241,24 @@ int step_dir_stepper_common_move_by(const struct device *dev, const int32_t micr
 	K_SPINLOCK(&data->lock) {
 		data->run_mode = STEPPER_RUN_MODE_POSITION;
 		atomic_set(&data->step_count, micro_steps);
+		enum stepper_direction old_direction = data->direction;
 		update_direction_from_step_count(dev);
 		ret = update_dir_pin(dev);
 		if (ret < 0) {
 			K_SPINLOCK_BREAK;
 		}
+		if (old_direction != data->direction) {
+			/* Direction changed, reset the dir pin setup timepoint */
+			step_dir_reset_dir_pin_timepoint(dev);
+		}
 		config->timing_source->update(dev, data->microstep_interval_ns);
-		config->timing_source->start(dev);
+		if (sys_timepoint_expired(data->t_dsu_timepoint)) {
+			config->timing_source->start(dev);
+		} else {
+			/* Ensure we wait the required time before starting to step */
+			k_sleep(sys_timepoint_timeout(data->t_dsu_timepoint));
+			config->timing_source->start(dev);
+		}
 	}
 
 	return ret;
