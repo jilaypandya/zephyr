@@ -205,28 +205,25 @@ struct tmc_ramp_generator_data {
  * @brief Configure Trinamic Stepper Ramp Generator
  *
  * @param dev Pointer to the stepper motor controller instance
- * @param stepper_index The index of the stepper to set the ramp for.
  * @param ramp_data Pointer to a struct containing the required ramp parameters
  *
  * @retval -EIO General input / output error
  * @retval -ENOSYS If not implemented by device driver
  * @retval 0 Success
  */
-int tmc50xx_stepper_set_ramp(const struct device *dev, const uint8_t stepper_index,
+int tmc50xx_stepper_set_ramp(const struct device *dev,
 			     const struct tmc_ramp_generator_data *ramp_data);
 
 /**
  * @brief Set the maximum velocity of the stepper motor
  *
  * @param dev Pointer to the stepper motor controller instance
- * @param stepper_index The index of the stepper to set the maximum velocity for.
  * @param velocity Maximum velocity in microsteps per second.
  *
  * @retval -EIO General input / output error
  * @retval 0 Success
  */
-int tmc50xx_stepper_set_max_velocity(const struct device *dev, const uint8_t stepper_index,
-					const uint32_t velocity);
+int tmc50xx_stepper_set_max_velocity(const struct device *dev, const uint32_t velocity);
 
 /**
  * @}
