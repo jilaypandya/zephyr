@@ -30,17 +30,6 @@ extern "C" {
 #endif
 
 /**
- * @brief Check if the stepper index is valid
- * @param stepper_idx Stepper index to check
- * @param max_num_stepper Maximum number of steppers supported by the device
- * @param dev Pointer to the device structure
- */
-#define CHECK_STEPPER_IDX(dev, stepper_idx, max_num_stepper)                                       \
-	__ASSERT(stepper_idx < max_num_stepper,                                                    \
-		 "Invalid stepper index %d, max is %d for device %s", stepper_idx,                 \
-		 max_num_stepper, dev->name)
-
-/**
  * @brief Stepper Motor direction options
  */
 enum stepper_direction {
