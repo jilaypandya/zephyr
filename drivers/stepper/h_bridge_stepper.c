@@ -11,6 +11,8 @@
 #include <zephyr/sys_clock.h>
 #include <zephyr/drivers/stepper.h>
 
+#include "gpio_stepper/gpio_stepper_common.h"
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(h_bridge_stepper, CONFIG_STEPPER_LOG_LEVEL);
 
@@ -23,25 +25,17 @@ static const uint8_t
 		{0u, 0u, 1u, 1u}, {0u, 0u, 0u, 1u}, {1u, 0u, 0u, 1u}, {1u, 0u, 0u, 0u}};
 
 struct h_bridge_stepper_config {
-	const struct gpio_dt_spec en_pin;
+	struct gpio_stepper_common_config common;
 	const struct gpio_dt_spec *control_pins;
-	bool invert_direction;
 	uint8_t step_gap;
 };
 
 struct h_bridge_stepper_data {
-	const struct device *dev;
-	struct k_spinlock lock;
-	enum stepper_direction direction;
-	enum stepper_run_mode run_mode;
+	struct gpio_stepper_common_data common;
 	uint8_t coil_charge;
-	struct k_work_delayable stepper_dwork;
-	int32_t actual_position;
-	uint64_t delay_in_ns;
-	int32_t step_count;
-	stepper_event_callback_t callback;
-	void *event_cb_user_data;
 };
+
+GPIO_STEPPER_STRUCT_CHECK(struct h_bridge_stepper_config, struct h_bridge_stepper_data);
 
 static int stepper_motor_set_coil_charge(const struct device *dev)
 {
@@ -87,69 +81,21 @@ static void decrement_coil_charge(const struct device *dev)
 
 static void update_coil_charge(const struct device *dev)
 {
-	const struct h_bridge_stepper_config *config = dev->config;
-	struct h_bridge_stepper_data *data = dev->data;
+	const struct gpio_stepper_common_config *config = dev->config;
+	struct gpio_stepper_common_data *data = dev->data;
 
 	if (data->direction == STEPPER_DIRECTION_POSITIVE) {
 		config->invert_direction ? decrement_coil_charge(dev) : increment_coil_charge(dev);
-		data->actual_position++;
+		atomic_inc(&data->actual_position);
 	} else if (data->direction == STEPPER_DIRECTION_NEGATIVE) {
 		config->invert_direction ? increment_coil_charge(dev) : decrement_coil_charge(dev);
-		data->actual_position--;
+		atomic_dec(&data->actual_position);
 	}
 }
 
-static void update_remaining_steps(const struct device *dev)
+static void stepper_work_step_handler(const struct device *dev)
 {
-	struct h_bridge_stepper_data *data = dev->data;
-
-	if (data->step_count > 0) {
-		data->step_count--;
-	} else if (data->step_count < 0) {
-		data->step_count++;
-	}
-}
-
-static void update_direction_from_step_count(const struct device *dev)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-
-	if (data->step_count > 0) {
-		data->direction = STEPPER_DIRECTION_POSITIVE;
-	} else if (data->step_count < 0) {
-		data->direction = STEPPER_DIRECTION_NEGATIVE;
-	} else {
-		LOG_ERR("Step count is zero");
-	}
-}
-
-static void position_mode_task(const struct device *dev)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-	int ret;
-
-	update_remaining_steps(dev);
-	ret = stepper_motor_set_coil_charge(dev);
-	if (ret < 0) {
-		LOG_ERR("Failed to set coil charge: %d", ret);
-		return;
-	}
-
-	update_coil_charge(dev);
-	if (data->step_count) {
-		(void)k_work_reschedule(&data->stepper_dwork, K_NSEC(data->delay_in_ns));
-	} else {
-		if (data->callback) {
-			data->callback(data->dev, STEPPER_EVENT_STEPS_COMPLETED,
-				       data->event_cb_user_data);
-		}
-		(void)k_work_cancel_delayable(&data->stepper_dwork);
-	}
-}
-
-static void velocity_mode_task(const struct device *dev)
-{
-	struct h_bridge_stepper_data *data = dev->data;
+	struct gpio_stepper_common_data *data = dev->data;
 	int ret;
 
 	ret = stepper_motor_set_coil_charge(dev);
@@ -159,18 +105,10 @@ static void velocity_mode_task(const struct device *dev)
 	}
 
 	update_coil_charge(dev);
-	(void)k_work_reschedule(&data->stepper_dwork, K_NSEC(data->delay_in_ns));
-}
-
-static void stepper_work_step_handler(struct k_work *work)
-{
-	struct k_work_delayable *dwork = k_work_delayable_from_work(work);
-	struct h_bridge_stepper_data *data =
-		CONTAINER_OF(dwork, struct h_bridge_stepper_data, stepper_dwork);
-
 	K_SPINLOCK(&data->lock) {
 		switch (data->run_mode) {
 		case STEPPER_RUN_MODE_POSITION:
+			update_remaining_steps(dev);
 			position_mode_task(data->dev);
 			break;
 		case STEPPER_RUN_MODE_VELOCITY:
@@ -185,74 +123,45 @@ static void stepper_work_step_handler(struct k_work *work)
 
 static int h_bridge_stepper_move_by(const struct device *dev, int32_t micro_steps)
 {
-	struct h_bridge_stepper_data *data = dev->data;
+	const struct gpio_stepper_common_config *config = dev->config;
+	struct gpio_stepper_common_data *data = dev->data;
+	int ret;
 
-	if (data->delay_in_ns == 0) {
+	if (data->microstep_interval_ns == 0) {
 		LOG_ERR("Step interval not set or invalid step interval set");
 		return -EINVAL;
 	}
 
 	if (micro_steps == 0) {
-		(void)k_work_cancel_delayable(&data->stepper_dwork);
-		if (data->callback) {
-			data->callback(data->dev, STEPPER_EVENT_STEPS_COMPLETED,
-				       data->event_cb_user_data);
-		}
+		gpio_stepper_trigger_callback(dev, STEPPER_EVENT_STEPS_COMPLETED);
+		config->timing_source->stop(dev);
 		return 0;
 	}
+
 	K_SPINLOCK(&data->lock) {
 		data->run_mode = STEPPER_RUN_MODE_POSITION;
 		data->step_count = micro_steps;
 		update_direction_from_step_count(dev);
-		(void)k_work_reschedule(&data->stepper_dwork, K_NO_WAIT);
+		ret = config->timing_source->update(dev, data->microstep_interval_ns);
+		if (ret < 0) {
+			LOG_ERR("Failed to update timing source: %d", ret);
+			K_SPINLOCK_BREAK;
+		}
+
+		ret = config->timing_source->start(dev);
+		if (ret < 0) {
+			LOG_ERR("Failed to start timing source: %d", ret);
+		}
 	}
-	return 0;
-}
 
-static int h_bridge_stepper_set_reference_position(const struct device *dev, int32_t position)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-
-	K_SPINLOCK(&data->lock) {
-		data->actual_position = position;
-	}
-	return 0;
-}
-
-static int h_bridge_stepper_get_actual_position(const struct device *dev, int32_t *position)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-
-	K_SPINLOCK(&data->lock) {
-		*position = data->actual_position;
-	}
-	return 0;
-}
-
-static int h_bridge_stepper_move_to(const struct device *dev, int32_t micro_steps)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-	int32_t steps_to_move;
-
-	K_SPINLOCK(&data->lock) {
-		steps_to_move = micro_steps - data->actual_position;
-	}
-	return h_bridge_stepper_move_by(dev, steps_to_move);
-}
-
-static int h_bridge_stepper_is_moving(const struct device *dev, bool *is_moving)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-
-	*is_moving = k_work_delayable_is_pending(&data->stepper_dwork);
-	LOG_DBG("Motor is %s moving", *is_moving ? "" : "not");
 	return 0;
 }
 
 static int h_bridge_stepper_set_microstep_interval(const struct device *dev,
 						   uint64_t microstep_interval_ns)
 {
-	struct h_bridge_stepper_data *data = dev->data;
+	const struct gpio_stepper_common_config *config = dev->config;
+	struct gpio_stepper_common_data *data = dev->data;
 
 	if (microstep_interval_ns == 0) {
 		LOG_ERR("Step interval is invalid.");
@@ -260,17 +169,21 @@ static int h_bridge_stepper_set_microstep_interval(const struct device *dev,
 	}
 
 	K_SPINLOCK(&data->lock) {
-		data->delay_in_ns = microstep_interval_ns;
+		data->microstep_interval_ns = microstep_interval_ns;
+		config->timing_source->update(dev, microstep_interval_ns);
 	}
 	LOG_DBG("Setting Motor step interval to %llu", microstep_interval_ns);
+
 	return 0;
 }
 
 static int h_bridge_stepper_run(const struct device *dev, const enum stepper_direction direction)
 {
-	struct h_bridge_stepper_data *data = dev->data;
+	const struct gpio_stepper_common_config *config = dev->config;
+	struct gpio_stepper_common_data *data = dev->data;
+	int ret;
 
-	if (data->delay_in_ns == 0) {
+	if (data->microstep_interval_ns == 0) {
 		LOG_ERR("Step interval not set or invalid step interval set");
 		return -EINVAL;
 	}
@@ -278,41 +191,38 @@ static int h_bridge_stepper_run(const struct device *dev, const enum stepper_dir
 	K_SPINLOCK(&data->lock) {
 		data->run_mode = STEPPER_RUN_MODE_VELOCITY;
 		data->direction = direction;
-		(void)k_work_reschedule(&data->stepper_dwork, K_NO_WAIT);
-	}
-	return 0;
-}
+		ret = config->timing_source->update(dev, data->microstep_interval_ns);
+		if (ret < 0) {
+			LOG_ERR("Failed to update timing source: %d", ret);
+			K_SPINLOCK_BREAK;
+		}
 
-static int h_bridge_stepper_set_event_callback(const struct device *dev,
-					       stepper_event_callback_t callback, void *user_data)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-
-	K_SPINLOCK(&data->lock) {
-		data->callback = callback;
-		data->event_cb_user_data = user_data;
+		ret = config->timing_source->start(dev);
+		if (ret < 0) {
+			LOG_ERR("Failed to start timing source: %d", ret);
+		}
 	}
+
 	return 0;
 }
 
 static int h_bridge_stepper_stop(const struct device *dev)
 {
-	struct h_bridge_stepper_data *data = dev->data;
+	const struct gpio_stepper_common_config *config = dev->config;
+	struct gpio_stepper_common_data *data = dev->data;
 	int err;
 
 	K_SPINLOCK(&data->lock) {
-		err = k_work_cancel_delayable(&data->stepper_dwork);
-
-		if (data->callback && !err) {
-			data->callback(data->dev, STEPPER_EVENT_STOPPED, data->event_cb_user_data);
-		}
+		err = config->timing_source->stop(dev);
+		gpio_stepper_trigger_callback(dev, STEPPER_EVENT_STOPPED);
 	}
+
 	return err;
 }
 
 static int h_bridge_stepper_init(const struct device *dev)
 {
-	struct h_bridge_stepper_data *data = dev->data;
+	struct gpio_stepper_common_data *data = dev->data;
 	const struct h_bridge_stepper_config *config = dev->config;
 	int err;
 
@@ -326,20 +236,19 @@ static int h_bridge_stepper_init(const struct device *dev)
 		}
 	}
 
-	k_work_init_delayable(&data->stepper_dwork, stepper_work_step_handler);
-	return 0;
+	return gpio_stepper_common_init(dev);
 }
 
 static DEVICE_API(stepper, h_bridge_stepper_api) = {
-	.set_reference_position = h_bridge_stepper_set_reference_position,
-	.get_actual_position = h_bridge_stepper_get_actual_position,
-	.set_event_callback = h_bridge_stepper_set_event_callback,
+	.set_reference_position = gpio_stepper_common_set_reference_position,
+	.get_actual_position = gpio_stepper_common_get_actual_position,
+	.set_event_callback = gpio_stepper_common_set_event_callback,
 	.set_microstep_interval = h_bridge_stepper_set_microstep_interval,
 	.move_by = h_bridge_stepper_move_by,
-	.move_to = h_bridge_stepper_move_to,
+	.move_to = gpio_stepper_common_move_to,
 	.run = h_bridge_stepper_run,
 	.stop = h_bridge_stepper_stop,
-	.is_moving = h_bridge_stepper_is_moving,
+	.is_moving = gpio_stepper_common_is_moving,
 };
 
 #define H_BRIDGE_STEPPER_DEFINE(inst)                                                              \
@@ -349,8 +258,8 @@ static DEVICE_API(stepper, h_bridge_stepper_api) = {
 	BUILD_ASSERT(ARRAY_SIZE(h_bridge_stepper_motor_control_pins_##inst) == 4,                  \
 		     "h_bridge stepper driver currently supports only 4 wire configuration");      \
 	static const struct h_bridge_stepper_config h_bridge_stepper_config_##inst = {             \
-		.en_pin = GPIO_DT_SPEC_INST_GET_OR(inst, en_gpios, {0}),                           \
-		.invert_direction = DT_INST_PROP(inst, invert_direction),                          \
+		.common = GPIO_STEPPER_DT_INST_COMMON_CONFIG_INIT(inst),                           \
+		.common.timing_source_cb = stepper_work_step_handler,                              \
 		.step_gap = DT_INST_PROP(inst, lut_step_gap),                                      \
 		.control_pins = h_bridge_stepper_motor_control_pins_##inst};                       \
 	static struct h_bridge_stepper_data h_bridge_stepper_data_##inst;                          \

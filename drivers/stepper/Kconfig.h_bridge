@@ -4,5 +4,6 @@
 
 config H_BRIDGE_STEPPER
 	bool "Activate driver for gpio stepper control"
+	select GPIO_STEPPER
 	depends on DT_HAS_ZEPHYR_H_BRIDGE_STEPPER_ENABLED
 	default y
