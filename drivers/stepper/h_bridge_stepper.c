@@ -14,11 +14,11 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(h_bridge_stepper, CONFIG_STEPPER_LOG_LEVEL);
 
-#define MAX_MICRO_STEP_RES STEPPER_MICRO_STEP_2
+#define LUT_MAX_STEP_GAP   2
 #define NUM_CONTROL_PINS   4
 
 static const uint8_t
-	half_step_lookup_table[NUM_CONTROL_PINS * MAX_MICRO_STEP_RES][NUM_CONTROL_PINS] = {
+	half_step_lookup_table[NUM_CONTROL_PINS * LUT_MAX_STEP_GAP][NUM_CONTROL_PINS] = {
 		{1u, 1u, 0u, 0u}, {0u, 1u, 0u, 0u}, {0u, 1u, 1u, 0u}, {0u, 0u, 1u, 0u},
 		{0u, 0u, 1u, 1u}, {0u, 0u, 0u, 1u}, {1u, 0u, 0u, 1u}, {1u, 0u, 0u, 0u}};
 
@@ -26,6 +26,7 @@ struct h_bridge_stepper_config {
 	const struct gpio_dt_spec en_pin;
 	const struct gpio_dt_spec *control_pins;
 	bool invert_direction;
+	uint8_t step_gap;
 };
 
 struct h_bridge_stepper_data {
@@ -33,7 +34,6 @@ struct h_bridge_stepper_data {
 	struct k_spinlock lock;
 	enum stepper_direction direction;
 	enum stepper_run_mode run_mode;
-	uint8_t step_gap;
 	uint8_t coil_charge;
 	struct k_work_delayable stepper_dwork;
 	int32_t actual_position;
@@ -63,23 +63,25 @@ static int stepper_motor_set_coil_charge(const struct device *dev)
 
 static void increment_coil_charge(const struct device *dev)
 {
+	const struct h_bridge_stepper_config *config = dev->config;
 	struct h_bridge_stepper_data *data = dev->data;
 
-	if (data->coil_charge == NUM_CONTROL_PINS * MAX_MICRO_STEP_RES - data->step_gap) {
+	if (data->coil_charge == NUM_CONTROL_PINS * LUT_MAX_STEP_GAP - config->step_gap) {
 		data->coil_charge = 0;
 	} else {
-		data->coil_charge = data->coil_charge + data->step_gap;
+		data->coil_charge = data->coil_charge + config->step_gap;
 	}
 }
 
 static void decrement_coil_charge(const struct device *dev)
 {
+	const struct h_bridge_stepper_config *config = dev->config;
 	struct h_bridge_stepper_data *data = dev->data;
 
 	if (data->coil_charge == 0) {
-		data->coil_charge = NUM_CONTROL_PINS * MAX_MICRO_STEP_RES - data->step_gap;
+		data->coil_charge = NUM_CONTROL_PINS * LUT_MAX_STEP_GAP - config->step_gap;
 	} else {
-		data->coil_charge = data->coil_charge - data->step_gap;
+		data->coil_charge = data->coil_charge - config->step_gap;
 	}
 }
 
@@ -281,34 +283,6 @@ static int h_bridge_stepper_run(const struct device *dev, const enum stepper_dir
 	return 0;
 }
 
-static int h_bridge_stepper_set_micro_step_res(const struct device *dev,
-					       enum stepper_micro_step_resolution micro_step_res)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-	int err = 0;
-
-	K_SPINLOCK(&data->lock) {
-		switch (micro_step_res) {
-		case STEPPER_MICRO_STEP_1:
-		case STEPPER_MICRO_STEP_2:
-			data->step_gap = MAX_MICRO_STEP_RES >> (micro_step_res - 1);
-			break;
-		default:
-			LOG_ERR("Unsupported micro step resolution %d", micro_step_res);
-			err = -ENOTSUP;
-		}
-	}
-	return err;
-}
-
-static int h_bridge_stepper_get_micro_step_res(const struct device *dev,
-					       enum stepper_micro_step_resolution *micro_step_res)
-{
-	struct h_bridge_stepper_data *data = dev->data;
-	*micro_step_res = MAX_MICRO_STEP_RES >> (data->step_gap - 1);
-	return 0;
-}
-
 static int h_bridge_stepper_set_event_callback(const struct device *dev,
 					       stepper_event_callback_t callback, void *user_data)
 {
@@ -319,41 +293,6 @@ static int h_bridge_stepper_set_event_callback(const struct device *dev,
 		data->event_cb_user_data = user_data;
 	}
 	return 0;
-}
-
-static int h_bridge_stepper_enable(const struct device *dev)
-{
-	const struct h_bridge_stepper_config *config = dev->config;
-	struct h_bridge_stepper_data *data = dev->data;
-	int err;
-
-	K_SPINLOCK(&data->lock) {
-		if (config->en_pin.port != NULL) {
-			err = gpio_pin_set_dt(&config->en_pin, 1);
-		} else {
-			LOG_DBG("No en_pin detected");
-			err = -ENOTSUP;
-		}
-	}
-	return err;
-}
-
-static int h_bridge_stepper_disable(const struct device *dev)
-{
-	const struct h_bridge_stepper_config *config = dev->config;
-	struct h_bridge_stepper_data *data = dev->data;
-	int err;
-
-	K_SPINLOCK(&data->lock) {
-		if (config->en_pin.port != NULL) {
-			err = gpio_pin_set_dt(&config->en_pin, 0);
-		} else {
-			LOG_DBG("No en_pin detected, power stages will not be turned off if "
-				"stepper is in motion");
-			err = -ENOTSUP;
-		}
-	}
-	return err;
 }
 
 static int h_bridge_stepper_stop(const struct device *dev)
@@ -380,19 +319,10 @@ static int h_bridge_stepper_init(const struct device *dev)
 	data->dev = dev;
 	LOG_DBG("Initializing %s h_bridge_stepper with %d pin", dev->name, NUM_CONTROL_PINS);
 	for (uint8_t n_pin = 0; n_pin < NUM_CONTROL_PINS; n_pin++) {
-		(void)gpio_pin_configure_dt(&config->control_pins[n_pin], GPIO_OUTPUT_INACTIVE);
-	}
-
-	if (config->en_pin.port != NULL) {
-		if (!gpio_is_ready_dt(&config->en_pin)) {
-			LOG_ERR("Enable Pin is not ready");
+		err = gpio_pin_configure_dt(&config->control_pins[n_pin], GPIO_OUTPUT_INACTIVE);
+		if (err < 0) {
+			LOG_ERR("Failed to configure control pin %d: %d", n_pin, err);
 			return -ENODEV;
-		}
-
-		err = gpio_pin_configure_dt(&config->en_pin, GPIO_OUTPUT_INACTIVE);
-		if (err != 0) {
-			LOG_ERR("%s: Failed to configure en_pin (error: %d)", dev->name, err);
-			return err;
 		}
 	}
 
@@ -401,10 +331,6 @@ static int h_bridge_stepper_init(const struct device *dev)
 }
 
 static DEVICE_API(stepper, h_bridge_stepper_api) = {
-	.enable = h_bridge_stepper_enable,
-	.disable = h_bridge_stepper_disable,
-	.set_micro_step_res = h_bridge_stepper_set_micro_step_res,
-	.get_micro_step_res = h_bridge_stepper_get_micro_step_res,
 	.set_reference_position = h_bridge_stepper_set_reference_position,
 	.get_actual_position = h_bridge_stepper_get_actual_position,
 	.set_event_callback = h_bridge_stepper_set_event_callback,
@@ -425,12 +351,9 @@ static DEVICE_API(stepper, h_bridge_stepper_api) = {
 	static const struct h_bridge_stepper_config h_bridge_stepper_config_##inst = {             \
 		.en_pin = GPIO_DT_SPEC_INST_GET_OR(inst, en_gpios, {0}),                           \
 		.invert_direction = DT_INST_PROP(inst, invert_direction),                          \
+		.step_gap = DT_INST_PROP(inst, lut_step_gap),                                      \
 		.control_pins = h_bridge_stepper_motor_control_pins_##inst};                       \
-	static struct h_bridge_stepper_data h_bridge_stepper_data_##inst = {                       \
-		.step_gap = MAX_MICRO_STEP_RES >> (DT_INST_PROP(inst, micro_step_res) - 1),        \
-	};                                                                                         \
-	BUILD_ASSERT(DT_INST_PROP(inst, micro_step_res) <= STEPPER_MICRO_STEP_2,                   \
-		     "h_bridge stepper driver supports up to 2 micro steps");                      \
+	static struct h_bridge_stepper_data h_bridge_stepper_data_##inst;                          \
 	DEVICE_DT_INST_DEFINE(inst, h_bridge_stepper_init, NULL, &h_bridge_stepper_data_##inst,    \
 			      &h_bridge_stepper_config_##inst, POST_KERNEL,                        \
 			      CONFIG_STEPPER_INIT_PRIORITY, &h_bridge_stepper_api);
