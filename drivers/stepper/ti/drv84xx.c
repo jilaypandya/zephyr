@@ -8,7 +8,6 @@
 #include <zephyr/drivers/stepper.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/stepper/stepper_drv84xx.h>
-#include "../step_dir/step_dir_stepper_common.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(drv84xx, CONFIG_STEPPER_LOG_LEVEL);
@@ -416,12 +415,6 @@ static int drv84xx_init(const struct device *dev)
 		if (ret != 0) {
 			return ret;
 		}
-	}
-
-	ret = step_dir_stepper_common_init(dev);
-	if (ret != 0) {
-		LOG_ERR("Failed to initialize common step direction stepper (error: %d)", ret);
-		return ret;
 	}
 
 	/* Configure fault pin if it is available */

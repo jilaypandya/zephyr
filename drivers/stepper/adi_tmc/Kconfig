@@ -1,14 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 Carl Zeiss Meditec AG
 # SPDX-License-Identifier: Apache-2.0
 
-menuconfig STEPPER_ADI_TMC
-	bool "Trinamic Stepper Controller"
-	depends on STEPPER
-	default y
-	help
-	  Enable trinamic stepper controller
-
-if STEPPER_ADI_TMC
+comment "ADI Trinamic Stepper Drivers"
 
 config STEPPER_ADI_TMC_SPI
 	bool "Use Trinamic Stepper Controller with SPI"
@@ -24,10 +17,6 @@ config STEPPER_ADI_TMC_UART
 	help
 	  A Trinamic Stepper Controller with single wire UART is enabled
 
-comment "Trinamic Stepper Drivers"
-
 rsource "Kconfig.tmc22xx"
 rsource "Kconfig.tmc50xx"
 rsource "Kconfig.tmc51xx"
-
-endif # STEPPER_ADI_TMC

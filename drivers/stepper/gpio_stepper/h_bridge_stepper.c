@@ -11,7 +11,7 @@
 #include <zephyr/sys_clock.h>
 #include <zephyr/drivers/stepper.h>
 
-#include "gpio_stepper/gpio_stepper_common.h"
+#include "gpio_stepper_common.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(h_bridge_stepper, CONFIG_STEPPER_LOG_LEVEL);
@@ -140,7 +140,7 @@ static int h_bridge_stepper_move_by(const struct device *dev, int32_t micro_step
 
 	K_SPINLOCK(&data->lock) {
 		data->run_mode = STEPPER_RUN_MODE_POSITION;
-		data->step_count = micro_steps;
+		atomic_set(&data->step_count, micro_steps);
 		update_direction_from_step_count(dev);
 		ret = config->timing_source->update(dev, data->microstep_interval_ns);
 		if (ret < 0) {

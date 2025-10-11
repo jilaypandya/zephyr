@@ -8,7 +8,7 @@
 #include <zephyr/drivers/stepper.h>
 #include <zephyr/drivers/gpio.h>
 
-#include "gpio_stepper/gpio_stepper_common.h"
+#include "gpio_stepper_common.h"
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(gpio_step_dir_controller, CONFIG_STEPPER_LOG_LEVEL);
