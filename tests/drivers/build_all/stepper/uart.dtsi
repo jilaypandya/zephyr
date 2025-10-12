@@ -18,7 +18,6 @@ adi_tmc51xx_uart: adi_tmc51xx {
 	clock-frequency = <16000000>; /* Internal/External Clock frequency */
 
 	/* common stepper controller settings */
-	invert-direction;
 	micro-step-res = <256>;
 
 	/* ADI TMC stallguard settings specific to TMC5160 */

@@ -4,8 +4,20 @@
 
 config STEPPER_ADI_TMC50XX
 	bool "Activate trinamic tmc50xx stepper driver"
-	depends on DT_HAS_ADI_TMC50XX_ENABLED && STEPPER_ADI_TMC
+	depends on DT_HAS_ADI_TMC50XX_ENABLED
 	select STEPPER_ADI_TMC_SPI
+	default y
+
+config STEPPER_ADI_TMC50XX_MOTION_CONTROLLER
+	bool "Activate trinamic tmc50xx motion controller"
+	depends on DT_HAS_ADI_TMC50XX_MOTION_CONTROLLER_ENABLED
+	select STEPPER_ADI_TMC50XX
+	default y
+
+config STEPPER_ADI_TMC50XX_STEPPER_DRIVER
+	bool "Activate trinamic tmc51xx stepper driver"
+	depends on DT_HAS_ADI_TMC50XX_STEPPER_DRIVER_ENABLED
+    select STEPPER_ADI_TMC50XX
 	default y
 
 module = TMC50XX
