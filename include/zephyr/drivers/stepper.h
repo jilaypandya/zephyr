@@ -442,7 +442,7 @@ enum stepper_drv_micro_step_resolution {
 
 enum stepper_drv_event {
 	/** Stepper driver stall detected */
-	STEPPER_DRV_EVENT_STALL_DETETCTED = 0,
+	STEPPER_DRV_EVENT_STALL_DETECTED = 0,
 	/** Stepper driver fault detected */
 	STEPPER_DRV_EVENT_FAULT_DETECTED = 1,
 };
