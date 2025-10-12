@@ -52,7 +52,7 @@ static void print_stepper_drv_event_cb(const struct device *dev, const enum step
 	}
 
 	switch (event) {
-	case STEPPER_DRV_EVENT_STALL_DETETCTED:
+	case STEPPER_DRV_EVENT_STALL_DETECTED:
 		shell_info(sh, "%s: Stall detected.", dev->name);
 		break;
 	case STEPPER_DRV_EVENT_FAULT_DETECTED:

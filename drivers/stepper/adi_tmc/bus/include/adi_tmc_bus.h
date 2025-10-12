@@ -10,6 +10,7 @@
 #include <zephyr/types.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/spi.h>
+#include <adi_tmc_bus.h>
 
 /* Communication interface types */
 #define TMC_COMM_SPI  0
