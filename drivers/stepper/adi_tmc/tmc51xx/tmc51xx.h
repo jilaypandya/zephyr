@@ -7,82 +7,61 @@
 #ifndef ZEPHYR_DRIVERS_STEPPER_ADI_TMC51XX_H
 #define ZEPHYR_DRIVERS_STEPPER_ADI_TMC51XX_H
 
-#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/stepper/stepper_trinamic.h>
 
-#include <adi_tmc_bus.h>
+/**
+ * @brief Trigger the registered callback for stepper events.
+ *
+ * @param dev Pointer to the device structure.
+ * @param event The stepper driver event that occurred.
+ */
+void driver_trigger_cb(const struct device *dev, const enum stepper_event event);
 
-#define DT_DRV_COMPAT adi_tmc51xx
+/**
+ * @brief Trigger the registered callback for motion controller events.
+ *
+ * @param dev Pointer to the device structure.
+ * @param event The stepper event that occurred.
+ */
+void motion_controller_trigger_cb(const struct device *dev, const enum stepper_event event);
 
-/* Check for supported bus types */
-#define TMC51XX_BUS_SPI  DT_ANY_INST_ON_BUS_STATUS_OKAY(spi)
-#define TMC51XX_BUS_UART DT_ANY_INST_ON_BUS_STATUS_OKAY(uart)
+/**
+ * @brief Enable or disable stallguard feature.
+ *
+ * @param dev Pointer to the device structure.
+ * @param enable true to enable, false to disable
+ * @retval -EIO on failure, -EAGAIN if velocity is too low, 0 on success
+ */
+int stallguard_enable(const struct device *dev, const bool enable);
 
-/* Common configuration structure for TMC51xx */
-struct tmc51xx_config {
-	union tmc_bus bus;
-	const struct tmc_bus_io *bus_io;
-	uint8_t comm_type;
-	const uint32_t gconf;
-	const uint32_t clock_frequency;
+/**
+ * @param dev Pointer to tmc51xx motion controller device
+ */
+int read_actual_position(const struct device *dev, int32_t *position);
 
-#if TMC51XX_BUS_UART
-	const struct gpio_dt_spec sw_sel_gpio;
-	uint8_t uart_addr;
-#endif
-#if TMC51XX_BUS_SPI
-	struct gpio_dt_spec diag0_gpio;
-#endif
-	const struct device *motion_controller;
-	const struct device *stepper_driver;
-};
+void tmc51xx_reschedule_rampstat_callback(const struct device *dev);
 
-struct tmc51xx_data {
-	struct k_sem sem;
-	struct k_work_delayable rampstat_callback_dwork;
-	struct gpio_callback diag0_cb;
-	const struct device *dev;
-};
+/**
+ * @brief Write a 32-bit value to a TMC51xx register.
+ *
+ * @param dev
+ * @param reg_addr
+ * @param reg_val
+ * @retval -EIO on failure, 0 on success
+ */
+int tmc51xx_write(const struct device *dev, const uint8_t reg_addr, const uint32_t reg_val);
 
-struct tmc51xx_stepper_config {
-	const uint16_t default_micro_step_res;
-	const int8_t sg_threshold;
-	/* parent controller required for bus communication */
-	const struct device *controller;
-};
+/**
+ * @brief Read a 32-bit value from a TMC51xx register.
+ *
+ * @param dev
+ * @param reg_addr
+ * @param reg_val
+ * @retval -EIO on failure, 0 on success
+ */
+int tmc51xx_read(const struct device *dev, const uint8_t reg_addr, uint32_t *reg_val);
 
-struct tmc51xx_stepper_data {
-	stepper_drv_event_cb_t drv_event_cb;
-	void *drv_event_cb_user_data;
-};
+bool tmc51xx_is_interrupt_driven(const struct device *dev);
 
-struct tmc51xx_motion_controller_config {
-	const bool is_sg_enabled;
-	const uint32_t sg_velocity_check_interval_ms;
-	const uint32_t sg_threshold_velocity;
-#ifdef CONFIG_STEPPER_ADI_TMC51XX_RAMP_GEN
-	const struct tmc_ramp_generator_data default_ramp_config;
-#endif
-	/* parent controller required for bus communication */
-	const struct device *controller;
-};
-
-struct tmc51xx_motion_controller_data {
-	struct k_work_delayable stallguard_dwork;
-	/* Work item to run the callback in a thread context. */
-	const struct device *dev;
-	stepper_event_callback_t callback;
-	void *event_cb_user_data;
-};
-
-#if TMC51XX_BUS_SPI
-/* SPI bus I/O operations for TMC51xx devices */
-extern const struct tmc_bus_io tmc51xx_spi_bus_io;
-#endif
-
-#if TMC51XX_BUS_UART
-/* UART bus I/O operations for TMC51xx devices */
-extern const struct tmc_bus_io tmc51xx_uart_bus_io;
-#endif
 
 #endif /* ZEPHYR_DRIVERS_STEPPER_ADI_TMC51XX_H */
