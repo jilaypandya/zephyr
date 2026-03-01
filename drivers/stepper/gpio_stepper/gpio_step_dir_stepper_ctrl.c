@@ -285,26 +285,24 @@ static DEVICE_API(stepper_ctrl, gpio_step_dir_stepper_ctrl_api) = {
 	.stop = gpio_step_dir_stepper_ctrl_stop,
 };
 
-#define ZEPHYR_GPIO_STEP_DIR_CONTROLLER_DEFINE(inst)                                               \
-		static const struct gpio_step_dir_stepper_ctrl_config                                      \
-						gpio_step_dir_stepper_ctrl_config_##inst =                                 \
-		{                                                                                          \
-						.common = GPIO_STEPPER_DT_INST_COMMON_CONFIG_INIT(inst),                   \
-						.common.timing_source_cb = stepper_handle_timing_signal,                   \
-						.step_pin = GPIO_DT_SPEC_INST_GET(inst, step_gpios),                       \
-						.dir_pin = GPIO_DT_SPEC_INST_GET(inst, dir_gpios),                         \
-						.stepper_driver = DEVICE_DT_GET_OR_NULL(                                   \
-								DT_PHANDLE(DT_DRV_INST(inst), stepper_driver)),                    \
-		};                                                                                         \
-		static struct gpio_step_dir_stepper_ctrl_data gpio_step_dir_stepper_ctrl_data_##inst =     \
-		{                                                                                          \
-				.common = GPIO_STEPPER_DT_INST_COMMON_DATA_INIT(inst),                             \
-				.step_high = ATOMIC_INIT(0),                                                       \
-		};                                                                                         \
-		DEVICE_DT_INST_DEFINE(inst, gpio_step_dir_stepper_init, NULL,                              \
-							  &gpio_step_dir_stepper_ctrl_data_##inst,                             \
-							  &gpio_step_dir_stepper_ctrl_config_##inst,                           \
-							  POST_KERNEL, CONFIG_STEPPER_INIT_PRIORITY,                           \
-							  &gpio_step_dir_stepper_ctrl_api);
+#define ZEPHYR_GPIO_STEP_DIR_CONTROLLER_DEFINE(inst)						   \
+	static const struct gpio_step_dir_stepper_ctrl_config					   \
+		gpio_step_dir_stepper_ctrl_config_##inst = {					   \
+		.common = GPIO_STEPPER_DT_INST_COMMON_CONFIG_INIT(inst),			   \
+		.common.timing_source_cb = stepper_handle_timing_signal,			   \
+		.step_pin = GPIO_DT_SPEC_INST_GET(inst, step_gpios),				   \
+		.dir_pin = GPIO_DT_SPEC_INST_GET(inst, dir_gpios),				   \
+		.stepper_driver = DEVICE_DT_GET_OR_NULL(					   \
+					DT_PHANDLE(DT_DRV_INST(inst), stepper_driver)),		   \
+	};											   \
+	static struct gpio_step_dir_stepper_ctrl_data gpio_step_dir_stepper_ctrl_data_##inst = {   \
+		.common = GPIO_STEPPER_DT_INST_COMMON_DATA_INIT(inst),				   \
+		.step_high = ATOMIC_INIT(0),							   \
+	};											   \
+	DEVICE_DT_INST_DEFINE(inst, gpio_step_dir_stepper_init, NULL,				   \
+			      &gpio_step_dir_stepper_ctrl_data_##inst,				   \
+			      &gpio_step_dir_stepper_ctrl_config_##inst,			   \
+			      POST_KERNEL, CONFIG_STEPPER_INIT_PRIORITY,			   \
+			      &gpio_step_dir_stepper_ctrl_api);
 
 DT_INST_FOREACH_STATUS_OKAY(ZEPHYR_GPIO_STEP_DIR_CONTROLLER_DEFINE)
