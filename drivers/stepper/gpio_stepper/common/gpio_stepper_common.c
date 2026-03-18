@@ -23,3 +23,4 @@ int gpio_stepper_common_init(const struct device *dev)
 
 	return stepper_ctrl_event_handler_init(dev);
 }
+

@@ -281,6 +281,7 @@ static DEVICE_API(stepper_ctrl, gpio_step_dir_stepper_ctrl_api) = {
 	.get_actual_position = gpio_stepper_common_get_actual_position,
 	.set_event_cb = gpio_stepper_common_set_event_cb,
 	.set_microstep_interval = gpio_step_dir_stepper_ctrl_set_microstep_interval,
+	.get_speed = gpio_stepper_common_get_speed,
 	.run = gpio_step_dir_stepper_ctrl_run,
 	.stop = gpio_step_dir_stepper_ctrl_stop,
 };

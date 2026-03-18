@@ -47,8 +47,8 @@ struct gpio_stepper_common_config {
 		.invert_direction = DT_PROP(node_id, invert_direction),                            \
 		.timing_source = COND_CODE_1(DT_NODE_HAS_PROP(node_id, counter),                   \
 						(&step_counter_timing_source_api),                 \
-						(&step_work_timing_source_api)),                   \
-	}
+						(&step_work_timing_source_api)),    \
+		}
 
 /**
  * @brief Initialize common GPIO stepper config from devicetree instance.
@@ -289,6 +289,25 @@ gpio_stepper_common_get_stepper_ctrl_dev(const struct gpio_stepper_common_data *
 {
 	ARG_UNUSED(data != NULL);
 	return data->event_common.dev;
+}
+
+static inline int gpio_stepper_common_get_speed(const struct device *dev,
+						const enum stepper_ctrl_speed speed_type,
+						uint32_t *speed)
+{
+	struct gpio_stepper_common_data *data = dev->data;
+
+	/* The current implementation supports a fixed speed based on the microstep interval */
+	switch (speed_type) {
+	case STEPPER_CTRL_SPEED_ACTUAL:
+	case STEPPER_CTRL_SPEED_TARGET:
+		*speed = USEC_PER_SEC / data->common.microstep_interval_ns;
+		break;
+	default:
+		return -ENOTSUP;
+	}
+
+	return 0;
 }
 /** @} */
 

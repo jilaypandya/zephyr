@@ -247,6 +247,7 @@ static DEVICE_API(stepper_ctrl, h_bridge_stepper_ctrl_api) = {
 	.get_actual_position = gpio_stepper_common_get_actual_position,
 	.set_event_cb = gpio_stepper_common_set_event_cb,
 	.set_microstep_interval = h_bridge_stepper_ctrl_set_microstep_interval,
+	.get_speed = gpio_stepper_common_get_speed,
 	.move_by = h_bridge_stepper_ctrl_move_by,
 	.move_to = gpio_stepper_common_move_to,
 	.run = h_bridge_stepper_ctrl_run,
