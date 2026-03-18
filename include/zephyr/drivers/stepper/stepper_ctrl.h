@@ -66,7 +66,17 @@ enum stepper_ctrl_event {
 };
 
 /**
- * @brief Steper Motion Controller Ramp Parameters
+ * @brief Stepper Motion Controller Speed Options
+ */
+enum stepper_ctrl_speed {
+	/** Actual speed */
+	STEPPER_CTRL_SPEED_ACTUAL = 0,
+	/** Target speed  */
+	STEPPER_CTRL_SPEED_TARGET = 1,
+};
+
+/**
+ * @brief Stepper Motion Controller Ramp Parameters
  */
 struct stepper_ctrl_ramp {
 	/** Acceleration in micro_steps/s² */
@@ -129,6 +139,14 @@ typedef int (*stepper_ctrl_configure_ramp_t)(const struct device *dev,
 					     const struct stepper_ctrl_ramp *ramp);
 
 /**
+ * @brief Get the speed of the stepper motor depending on the speed type requested.
+ *
+ * @see stepper_ctrl_get_speed() for details.
+ */
+typedef int (*stepper_ctrl_get_speed_t)(const struct device *dev,
+					const enum stepper_ctrl_speed speed_type, uint32_t *speed);
+
+/**
  * @brief Move the stepper relatively by a given number of micro-steps.
  *
  * @see stepper_ctrl_move_by() for details.
@@ -173,6 +191,7 @@ __subsystem struct stepper_ctrl_driver_api {
 	stepper_ctrl_set_event_cb_t set_event_cb;
 	stepper_ctrl_set_microstep_interval_t set_microstep_interval;
 	stepper_ctrl_configure_ramp_t configure_ramp;
+	stepper_ctrl_get_speed_t get_speed;
 	stepper_ctrl_move_by_t move_by;
 	stepper_ctrl_move_to_t move_to;
 	stepper_ctrl_run_t run;
@@ -282,8 +301,8 @@ static inline int z_impl_stepper_ctrl_set_microstep_interval(const struct device
 	if (DEVICE_API_GET(stepper_ctrl, dev)->set_microstep_interval == NULL) {
 		return -ENOSYS;
 	}
-	return DEVICE_API_GET(stepper_ctrl, dev)->set_microstep_interval(dev,
-								      microstep_interval_ns);
+	return DEVICE_API_GET(stepper_ctrl, dev)
+		->set_microstep_interval(dev, microstep_interval_ns);
 }
 
 /**
@@ -300,7 +319,7 @@ __syscall int stepper_ctrl_configure_ramp(const struct device *dev,
 					  const struct stepper_ctrl_ramp *ramp);
 
 static inline int z_impl_stepper_ctrl_configure_ramp(const struct device *dev,
-	const struct stepper_ctrl_ramp *ramp)
+						     const struct stepper_ctrl_ramp *ramp)
 {
 	__ASSERT_NO_MSG(dev != NULL);
 	__ASSERT_NO_MSG(ramp != NULL);
@@ -310,6 +329,33 @@ static inline int z_impl_stepper_ctrl_configure_ramp(const struct device *dev,
 	}
 	return DEVICE_API_GET(stepper_ctrl, dev)->configure_ramp(dev, ramp);
 }
+
+/**
+ * @brief Get the speed in micro-steps/s of the stepper motor depending on the speed type
+ * requested.
+ * @note The minimum supported speed resolution is 1 micro_step/s.
+ *
+ * @param dev pointer to the device structure for the driver instance.
+ * @param speed_type The type of speed to get
+ * @param speed Pointer to store the returned speed in micro_steps/s
+ *
+ * @retval -EIO General input / output error
+ * @retval -ENOTSUP If the speed type requested is not supported by the device driver
+ * @retval 0 Success
+ */
+__syscall int stepper_ctrl_get_speed(const struct device *dev,
+				     const enum stepper_ctrl_speed speed_type, uint32_t *speed);
+
+static inline int z_impl_stepper_ctrl_get_speed(const struct device *dev,
+						const enum stepper_ctrl_speed speed_type,
+						uint32_t *speed)
+{
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(speed != NULL);
+
+	return DEVICE_API_GET(stepper_ctrl, dev)->get_speed(dev, speed_type, speed);
+}
+
 /**
  * @brief Set the micro-steps to be moved from the current position i.e. relative movement
  *
