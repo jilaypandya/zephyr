@@ -5,10 +5,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-description: MAX30101 heart rate sensor
-
-compatible: "maxim,max30101"
-
 include: [sensor-device.yaml, i2c-device.yaml]
 
 properties:
@@ -116,7 +112,6 @@ properties:
       Default set to 69 us, same as after Power Reset.
   led-pa:
     type: uint8-array
-    default: [0xff, 0xff, 0xff]
     description: |
       Set the pulse amplitude to control the LED current. The actual
       measured LED current for each part can vary significantly due to the

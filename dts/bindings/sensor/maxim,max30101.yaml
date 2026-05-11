@@ -1,0 +1,9 @@
+description: MAX30101 heart rate sensor
+
+compatible: "maxim,max30101"
+
+include: [maxim,max3010x-common.yaml]
+
+properties:
+  led-pa:
+    default: [ 0xff, 0xff, 0xff ]
